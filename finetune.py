@@ -5,7 +5,7 @@ from data import get_dataloaders
 from utils import train
 import os
 
-
+parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default='vgg11', help="network architecture")
 parser.add_argument('--data', type=str, default='./data/imagenette2-320/', help='path to dataset')
 parser.add_argument('--train_batch_size', type=int, default=128, help='train batch size')
@@ -23,7 +23,8 @@ if not os.path.exists('trained_models/'+args.model):
         os.makedirs('trained_models/'+args.model)
 
 print(f'\nTraining {args.model} model...')
-model = timm.create_model(args.model, pretrained=True, num_classes=10, img_size=128)
+model = timm.create_model(args.model, pretrained=True, num_classes=10)
+
 if args.model=='vgg11':
     model.features[0]=torch.nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1)
 '''

@@ -61,8 +61,8 @@ def single(models, base_model, clean, x, y, n_epochs, optimizers, lam, idx, path
                 plt.imshow(mask, cmap='Blues')
                 plt.colorbar()
                 if correct:
-                    plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+".png")
-                    np.save(path+"masks/"+str(y[i].item())+"/"+str(idx)+".npy", mask)
+                    plt.savefig(path+str(y[i].item())+"/figures/"+str(idx)+".png")
+                    np.save(path+str(y[i].item())+"/masks/"+str(idx)+".npy", mask)
                 idx+=1
     return idx
 

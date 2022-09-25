@@ -11,6 +11,8 @@ import numpy as np
 from data import get_dataloaders, AdversarialDataset
 from model import MaskedClf, Mask
 
+parser = argparse.ArgumentParser()
+
 parser.add_argument('--model', type=str, default='vgg11', help="network architecture")
 parser.add_argument('--attack', type=str, default='PGD', help="adversarial attack")
 parser.add_argument('--epsilon', type=float, default=0.01, help="epsilon")
@@ -41,12 +43,12 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 base_model = timm.create_model(args.model, pretrained=True, num_classes=10)
 base_model.features[0]=torch.nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1)
 base_model = base_model.to(device)
-base_model.load_state_dict(torch.load("trained_models/clean.pt"))
+base_model.load_state_dict(torch.load("trained_models/"+args.model+"/clean.pt"))
 base_model.eval()
 fmodel = foolbox.models.PyTorchModel(base_model, bounds=(-np.inf,np.inf))
 
-adv_dataloaders = {'train': DataLoader(AdversarialDataset(fmodel, args.attack, dataloaders['train'], 'train', eps, norm), batch_size=args.train_batch_size, shuffle=False),
-                   'test': DataLoader(AdversarialDataset(fmodel, args.attack, dataloaders['test'], 'test', eps, norm), batch_size=args.test_batch_size, shuffle=False)}
+adv_dataloaders = {'train': DataLoader(AdversarialDataset(fmodel, args.attack, dataloaders['train'], 'train', ne), batch_size=args.train_batch_size, shuffle=False),
+                   'test': DataLoader(AdversarialDataset(fmodel, args.attack, dataloaders['test'], 'test', ne), batch_size=args.test_batch_size, shuffle=False)}
 
 
 idx=0
@@ -61,3 +63,4 @@ for x, xadv, y in adv_dataloaders['test']:
         optimizers.append(torch.optim.Adam(model.parameters(), lr=0.01))
 
     idx=single(models, base_model, x,  xadv, y, 100, optimizers, args.lam, idx, path)
+

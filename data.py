@@ -38,21 +38,21 @@ def get_dataloaders(data_dir, train_batch_size, test_batch_size, data_transforms
 
 class AdversarialDataset(Dataset):
 
-    def __init__(self, model, adversarytype, dataloader, train, eps, norm):
-        c="data/adv/"+adversarytype+"/"+str(eps)+"/clean/"+train+".pt"
-        a="data/adv/"+adversarytype+"/"+str(eps)+"/adv/"+train+".pt"
-        l="data/adv/"+adversarytype+"/"+str(eps)+"/lbl/"+train+".pt"
+    def __init__(self, model, adversarytype, dataloader, train, ne):
+        c="data/adv/"+adversarytype+"/"+str(ne)+"/clean/"+train+".pt"
+        a="data/adv/"+adversarytype+"/"+str(ne)+"/adv/"+train+".pt"
+        l="data/adv/"+adversarytype+"/"+str(ne)+"/lbl/"+train+".pt"
         if os.path.isfile(c) and os.path.isfile(a) and os.path.isfile(l):
             self.clean_imgs=torch.load(c)
             self.adv_imgs=torch.load(a)
             self.labels=torch.load(l)
             return
-        if not os.path.exists("data/adv/"+adversarytype+"/"+str(eps)+"/clean"):
-            os.makedirs("data/adv/"+adversarytype+"/"+str(eps)+"/clean")
-        if not os.path.exists("data/adv/"+adversarytype+"/"+str(eps)+"/adv"):
-            os.makedirs("data/adv/"+adversarytype+"/"+str(eps)+"/adv")
-        if not os.path.exists("data/adv/"+adversarytype+"/"+str(eps)+"/lbl"):
-            os.makedirs("data/adv/"+adversarytype+"/"+str(eps)+"/lbl")
+        if not os.path.exists("data/adv/"+adversarytype+"/"+str(ne)+"/clean"):
+            os.makedirs("data/adv/"+adversarytype+"/"+str(ne)+"/clean")
+        if not os.path.exists("data/adv/"+adversarytype+"/"+str(ne)+"/adv"):
+            os.makedirs("data/adv/"+adversarytype+"/"+str(ne)+"/adv")
+        if not os.path.exists("data/adv/"+adversarytype+"/"+str(ne)+"/lbl"):
+            os.makedirs("data/adv/"+adversarytype+"/"+str(ne)+"/lbl")
         self.clean_imgs=torch.empty(0,1,128,128)
         self.adv_imgs=torch.empty(0,1,128,128)
         self.labels=torch.empty(0, dtype=torch.int64)
@@ -64,15 +64,18 @@ class AdversarialDataset(Dataset):
             if adversarytype=='PGD':
                 adversary = fb.attacks.PGD()
             elif adversarytype=='FMN':
-                if norm=="1":
+                if ne=="1":
                     adversary = fb.attacks.L1FMNAttack()
-                elif norm=="2":
+                elif ne=="2":
                     adversary = fb.attacks.L2FMNAttack()
                 else:
                     adversary = fb.attacks.LInfFMNAttack()
             else:
                 adversary = None
-            x_adv, clipped, is_adv = adversary(model, x, y, epsilons=eps)
+            if adversarytype=='PGD':
+                x_adv, clipped, is_adv = adversary(model, x, y, epsilons=ne)
+            else:
+                x_adv, clipped, is_adv = adversary(model, x, y, epsilons=0.01)
             self.clean_imgs=torch.cat((self.clean_imgs, x.detach().cpu()))
             self.adv_imgs=torch.cat((self.adv_imgs, x_adv.detach().cpu()))
             self.labels=torch.cat((self.labels, y.detach().cpu()))
