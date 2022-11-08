@@ -56,11 +56,11 @@ def single(models, base_model, clean, x, y, n_epochs, optimizers, lam, idx, path
             models[i].mask.weight.data.clamp_(0.)
             if epoch==n_epochs-1:
                 correct=torch.argmax(out, axis=1)==y[i]
-                mask=np.fft.fftshift(models[i].mask.weight.detach().cpu().reshape(128,128))
-                plt.figure()
-                plt.imshow(mask, cmap='Blues')
-                plt.colorbar()
                 if correct:
+                    mask=np.fft.fftshift(models[i].mask.weight.detach().cpu().reshape(128,128))
+                    plt.figure()
+                    plt.imshow(mask, cmap='Blues')
+                    plt.colorbar()
                     plt.savefig(path+str(y[i].item())+"/figures/"+str(idx)+".png")
                     np.save(path+str(y[i].item())+"/masks/"+str(idx)+".npy", mask)
                 idx+=1
