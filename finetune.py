@@ -8,7 +8,7 @@ import os
 parser = argparse.ArgumentParser()
 args = parser.parse_args()
 
-model='vgg11'
+model_name='vgg11'
 data='./data/imagenette2-320/'
 batch_size=128
 lr=0.001
@@ -21,10 +21,10 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 if not os.path.exists('trained_models/'+model):
         os.makedirs('trained_models/'+model)
 
-print(f'\nTraining {model} model...')
-model = timm.create_model(model, pretrained=True, num_classes=10)
+print(f'\nTraining {model_name} model...')
+model = timm.create_model(model_name, pretrained=True, num_classes=10)
 
-if model=='vgg11':
+if model_name=='vgg11':
     model.features[0]=torch.nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1)
 '''
 elif args.model=='vit_base_patch16_224':
