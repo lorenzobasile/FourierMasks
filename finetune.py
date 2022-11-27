@@ -22,7 +22,7 @@ if not os.path.exists('trained_models/'+model_name):
         os.makedirs('trained_models/'+model_name)
 
 print(f'\nTraining {model_name} model...')
-model = timm.create_model(model_name, pretrained=True, num_classes=10)
+model = timm.create_model(model_name, pretrained=True, num_classes=10, img_size=128)
 
 if model_name=='vgg11':
     model.features[0]=torch.nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1)
