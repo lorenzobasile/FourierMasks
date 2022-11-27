@@ -18,8 +18,8 @@ dataloaders = get_dataloaders(data_dir=data, train_batch_size=batch_size, test_b
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-if not os.path.exists('trained_models/'+model):
-        os.makedirs('trained_models/'+model)
+if not os.path.exists('trained_models/'+model_name):
+        os.makedirs('trained_models/'+model_name)
 
 print(f'\nTraining {model_name} model...')
 model = timm.create_model(model_name, pretrained=True, num_classes=10)
