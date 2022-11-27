@@ -31,7 +31,7 @@ def train(model, dataloaders, n_epochs, optimizer, scheduler=None):
             print("Accuracy on "+i+" set: ", correct/len(dataloaders[i].dataset))
 
 
-def single(models, base_model, clean, x, y, n_epochs, optimizers, lam, idx, path):
+def singleAdv(models, base_model, clean, x, y, n_epochs, optimizers, lam, idx, path):
 
     loss=torch.nn.CrossEntropyLoss()
     device=torch.device("cuda:0" if next(models[0].parameters()).is_cuda else "cpu")
@@ -43,11 +43,49 @@ def single(models, base_model, clean, x, y, n_epochs, optimizers, lam, idx, path
     out=base_model(clean)
     toprocess=(np.where((torch.argmax(out, axis=1)==y).cpu())[0]) #only correctly classified images
     for epoch in range(n_epochs):
-        print("Epoch: ", epoch+1, '/', n_epochs)
         for i in toprocess:
             models[i].train()
             out=models[i](x[i])
             l=loss(out, y[i].reshape(1))
+            penalty=models[i].mask.weight.abs().sum()
+            l+=penalty*lam
+            optimizers[i].zero_grad()
+            l.backward()
+            optimizers[i].step()
+            models[i].mask.weight.data.clamp_(0.)
+            if epoch==n_epochs-1:
+                correct=torch.argmax(out, axis=1)==y[i]
+                if correct:
+                    mask=np.fft.fftshift(models[i].mask.weight.detach().cpu().reshape(128,128))
+                    plt.figure()
+                    plt.imshow(mask, cmap='Blues')
+                    plt.colorbar()
+                    plt.savefig(path+str(y[i].item())+"/figures/"+str(idx)+".png")
+                    np.save(path+str(y[i].item())+"/masks/"+str(idx)+".npy", mask)
+                idx+=1
+    return idx
+
+def singleInv(models, base_model, clean, x, y, n_epochs, optimizers, lam, idx, path):
+
+    loss=torch.nn.CrossEntropyLoss()
+    device=torch.device("cuda:0" if next(models[0].parameters()).is_cuda else "cpu")
+
+    n=len(x)
+    x=x.to(device)
+    y=y.to(device)
+    clean=clean.to(device)
+    base_out=base_model(clean)
+    toprocess=(np.where((torch.argmax(base_out, axis=1)==y).cpu())[0]) #only correctly classified images
+    for epoch in range(n_epochs):
+        for i in toprocess:
+            models[i].train()
+            out=models[i](x[i])
+
+            invariance = loss(out, y[i].reshape(1))
+            invariance -= loss(base_out[i].reshape(1), y[i].reshape(1))
+            invariance = invariance**2
+            l = torch.exp(invariance)
+
             penalty=models[i].mask.weight.abs().sum()
             l+=penalty*lam
             optimizers[i].zero_grad()

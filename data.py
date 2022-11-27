@@ -5,7 +5,6 @@ from torchvision.transforms import transforms
 from torch.utils.data import DataLoader, Dataset
 import numpy as np
 import torch.nn as nn
-import foolbox as fb
 
 
 def get_dataloaders(data_dir, train_batch_size, test_batch_size, data_transforms=None, shuffle_train=False, shuffle_test=False):
@@ -38,21 +37,21 @@ def get_dataloaders(data_dir, train_batch_size, test_batch_size, data_transforms
 
 class AdversarialDataset(Dataset):
 
-    def __init__(self, model, adversarytype, dataloader, train, ne):
-        c="data/adv/"+adversarytype+"/"+str(ne)+"/clean/"+train+".pt"
-        a="data/adv/"+adversarytype+"/"+str(ne)+"/adv/"+train+".pt"
-        l="data/adv/"+adversarytype+"/"+str(ne)+"/lbl/"+train+".pt"
+    def __init__(self, model, adversarytype, dataloader, train, norm):
+        c="data/adv/"+adversarytype+"/"+str(norm)+"/clean/"+train+".pt"
+        a="data/adv/"+adversarytype+"/"+str(norm)+"/adv/"+train+".pt"
+        l="data/adv/"+adversarytype+"/"+str(norm)+"/lbl/"+train+".pt"
         if os.path.isfile(c) and os.path.isfile(a) and os.path.isfile(l):
             self.clean_imgs=torch.load(c)
             self.adv_imgs=torch.load(a)
             self.labels=torch.load(l)
             return
-        if not os.path.exists("data/adv/"+adversarytype+"/"+str(ne)+"/clean"):
-            os.makedirs("data/adv/"+adversarytype+"/"+str(ne)+"/clean")
-        if not os.path.exists("data/adv/"+adversarytype+"/"+str(ne)+"/adv"):
-            os.makedirs("data/adv/"+adversarytype+"/"+str(ne)+"/adv")
-        if not os.path.exists("data/adv/"+adversarytype+"/"+str(ne)+"/lbl"):
-            os.makedirs("data/adv/"+adversarytype+"/"+str(ne)+"/lbl")
+        if not os.path.exists("data/adv/"+adversarytype+"/"+str(norm)+"/clean"):
+            os.makedirs("data/adv/"+adversarytype+"/"+str(norm)+"/clean")
+        if not os.path.exists("data/adv/"+adversarytype+"/"+str(norm)+"/adv"):
+            os.makedirs("data/adv/"+adversarytype+"/"+str(norm)+"/adv")
+        if not os.path.exists("data/adv/"+adversarytype+"/"+str(norm)+"/lbl"):
+            os.makedirs("data/adv/"+adversarytype+"/"+str(norm)+"/lbl")
         self.clean_imgs=torch.empty(0,1,128,128)
         self.adv_imgs=torch.empty(0,1,128,128)
         self.labels=torch.empty(0, dtype=torch.int64)
@@ -64,9 +63,9 @@ class AdversarialDataset(Dataset):
             if adversarytype=='PGD':
                 adversary = fb.attacks.PGD()
             elif adversarytype=='FMN':
-                if ne=="1":
+                if norm=="1":
                     adversary = fb.attacks.L1FMNAttack()
-                elif ne=="2":
+                elif norm=="2":
                     adversary = fb.attacks.L2FMNAttack()
                 else:
                     adversary = fb.attacks.LInfFMNAttack()

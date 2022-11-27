@@ -6,26 +6,25 @@ from utils import train
 import os
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--model', type=str, default='vgg11', help="network architecture")
-parser.add_argument('--data', type=str, default='./data/imagenette2-320/', help='path to dataset')
-parser.add_argument('--train_batch_size', type=int, default=128, help='train batch size')
-parser.add_argument('--test_batch_size', type=int, default=64, help='test batch size')
-parser.add_argument('--epochs', type=int, default=50, help='number of epochs to train')
-parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
-
 args = parser.parse_args()
 
-dataloaders = get_dataloaders(data_dir=args.data, train_batch_size=args.train_batch_size, test_batch_size=args.test_batch_size)
+model='vgg11'
+data='./data/imagenette2-320/'
+batch_size=128
+lr=0.001
+epochs=50
+
+dataloaders = get_dataloaders(data_dir=data, train_batch_size=batch_size, test_batch_size=batch_size)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-if not os.path.exists('trained_models/'+args.model):
-        os.makedirs('trained_models/'+args.model)
+if not os.path.exists('trained_models/'+model):
+        os.makedirs('trained_models/'+model)
 
-print(f'\nTraining {args.model} model...')
-model = timm.create_model(args.model, pretrained=True, num_classes=10)
+print(f'\nTraining {model} model...')
+model = timm.create_model(model, pretrained=True, num_classes=10)
 
-if args.model=='vgg11':
+if model=='vgg11':
     model.features[0]=torch.nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1)
 '''
 elif args.model=='vit_base_patch16_224':
@@ -41,17 +40,17 @@ elif args.model=='vit_base_patch16_224':
     model.patch_embed.proj.bias = torch.nn.Parameter(biases)
     model.patch_embed.num_patches = (128 // 16) ** 2
     model.pos_embed = torch.nn.Parameter(torch.zeros(1, model.patch_embed.num_patches + 1, 768))
-'''    
+'''
 model = model.to(device)
 
-optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=0)
+optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=0)
 scheduler = torch.optim.lr_scheduler.OneCycleLR(
             optimizer,
-            args.lr,
-            epochs=args.epochs,
+            lr,
+            epochs=epochs,
             steps_per_epoch=len(dataloaders['train']),
             pct_start=0.1
         )
 
-train(model, dataloaders, args.epochs, optimizer, scheduler)
-torch.save(model.state_dict(), "trained_models/"+ args.model + "/clean.pt")
+train(model, dataloaders, epochs, optimizer, scheduler)
+torch.save(model.state_dict(), "trained_models/"+ model + "/clean.pt")
