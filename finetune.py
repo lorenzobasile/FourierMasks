@@ -11,8 +11,8 @@ args = parser.parse_args()
 model_name='vgg11'
 data='./data/imagenette2-320/'
 batch_size=128
-lr=0.001
-epochs=50
+lr=0.00001
+epochs=500
 
 dataloaders = get_dataloaders(data_dir=data, train_batch_size=batch_size, test_batch_size=batch_size)
 
@@ -22,7 +22,7 @@ if not os.path.exists('trained_models/'+model_name):
         os.makedirs('trained_models/'+model_name)
 
 print(f'\nTraining {model_name} model...')
-model = timm.create_model(model_name, pretrained=True, num_classes=10, img_size=128)
+model = timm.create_model(model_name, pretrained=True, num_classes=10)
 
 if model_name=='vgg11':
     model.features[0]=torch.nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1)
@@ -53,4 +53,4 @@ scheduler = torch.optim.lr_scheduler.OneCycleLR(
         )
 
 train(model, dataloaders, epochs, optimizer, scheduler)
-torch.save(model.state_dict(), "trained_models/"+ model + "/clean.pt")
+torch.save(model.state_dict(), "trained_models/"+ model_name + "/clean.pt")
