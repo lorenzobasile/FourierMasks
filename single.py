@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+import torchvision.models as models
 
 from data import get_dataloaders, AdversarialDataset
 from model import MaskedClf, Mask
@@ -23,10 +24,10 @@ parser.add_argument('--lr', type=float, default=0.1, help='learning rate')
 args = parser.parse_args()
 
 lam=0.01
-data='./data/imagenette2-320/',
-model='vgg11'
+data='./data/imagenette2-320/'
+model='resnet18'
 attack='FMN'
-norm=
+norm='infty'
 batch_size=4
 
 pathAdv="./singleAdv/"+attack+"/"+norm+"/"
@@ -41,9 +42,10 @@ if not os.path.exists(pathAdv):
 dataloaders = get_dataloaders(data_dir=data, train_batch_size=batch_size, test_batch_size=batch_size)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-base_model = timm.create_model(model, pretrained=True, num_classes=10)
-if base_model=='vgg11':
-    base_model.features[0]=torch.nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1)
+base_model = models.resnet18(pretrained=True)
+base_model.fc = torch.nn.Linear(512, 10)
+
+
 base_model = base_model.to(device)
 base_model.load_state_dict(torch.load("trained_models/"+model+"/clean.pt"))
 base_model.eval()
@@ -55,9 +57,12 @@ adv_dataloaders = {'train': DataLoader(AdversarialDataset(fmodel, attack, datalo
 
 idxAdv=0
 idxInv=0
-models=[]
-optimizers=[]
+
 for x, xadv, y in adv_dataloaders['test']:
+    modelsAdv=[]
+    modelsInv=[]
+    optimizersAdv=[]
+    optimizersInv=[]
     for i in range(batch_size):
         modelAdv=MaskedClf(Mask().to(device), base_model)
         modelInv=MaskedClf(Mask().to(device), base_model)
@@ -70,5 +75,5 @@ for x, xadv, y in adv_dataloaders['test']:
         optimizersAdv.append(torch.optim.Adam(modelAdv.parameters(), lr=0.001))
         optimizersInv.append(torch.optim.Adam(modelInv.parameters(), lr=0.001))
 
-    idxAdv=singleAdv(modelsAdv, base_model, x,  xadv, y, 100, optimizers, lam, idxAdv, path)
-    idxInv=singleInv(modelsInv, base_model, x,  xadv, y, 100, optimizers, lam, idxInv, path)
+    #idxAdv=singleAdv(modelsAdv, base_model, x,  xadv, y, 1000, optimizersAdv, lam, idxAdv, pathAdv)
+    idxInv=singleInv(modelsInv, base_model, x,  xadv, y, 100, optimizersInv, lam, idxInv, pathInv)

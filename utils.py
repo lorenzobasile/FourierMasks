@@ -56,11 +56,19 @@ def singleAdv(models, base_model, clean, x, y, n_epochs, optimizers, lam, idx, p
             if epoch==n_epochs-1:
                 correct=torch.argmax(out, axis=1)==y[i]
                 if correct:
-                    mask=np.fft.fftshift(models[i].mask.weight.detach().cpu().reshape(128,128))
+                    mask=np.fft.fftshift(models[i].mask.weight.detach().cpu().reshape(3,224,224))
                     plt.figure()
-                    plt.imshow(mask, cmap='Blues')
+                    plt.imshow(mask[0], cmap="Blues")
                     plt.colorbar()
-                    plt.savefig(path+str(y[i].item())+"/figures/"+str(idx)+".png")
+                    plt.savefig(path+str(y[i].item())+"/figures/"+str(idx)+"R.png")
+                    plt.figure()
+                    plt.imshow(mask[1], cmap="Blues")
+                    plt.colorbar()
+                    plt.savefig(path+str(y[i].item())+"/figures/"+str(idx)+"G.png")
+                    plt.figure()
+                    plt.imshow(mask[2], cmap="Blues")
+                    plt.colorbar()
+                    plt.savefig(path+str(y[i].item())+"/figures/"+str(idx)+"B.png")
                     np.save(path+str(y[i].item())+"/masks/"+str(idx)+".npy", mask)
                 idx+=1
     return idx
@@ -79,12 +87,11 @@ def singleInv(models, base_model, clean, x, y, n_epochs, optimizers, lam, idx, p
     for epoch in range(n_epochs):
         for i in toprocess:
             models[i].train()
-            out=models[i](x[i])
-
-            invariance = loss(out, y[i].reshape(1))
-            invariance -= loss(base_out[i].reshape(1), y[i].reshape(1))
-            invariance = invariance**2
-            l = torch.exp(invariance)
+            out=models[i](clean[i])
+            loss1 = loss(out, y[i].view(1))
+            diff = loss1-loss(base_out[i].view(1,-1), y[i].view(1))
+            pippo = torch.clone(diff)
+            l = torch.exp(pippo**2)
 
             penalty=models[i].mask.weight.abs().sum()
             l+=penalty*lam
@@ -95,11 +102,19 @@ def singleInv(models, base_model, clean, x, y, n_epochs, optimizers, lam, idx, p
             if epoch==n_epochs-1:
                 correct=torch.argmax(out, axis=1)==y[i]
                 if correct:
-                    mask=np.fft.fftshift(models[i].mask.weight.detach().cpu().reshape(128,128))
+                    mask=np.fft.fftshift(models[i].mask.weight.detach().cpu().reshape(3,224,224))
                     plt.figure()
-                    plt.imshow(mask, cmap='Blues')
+                    plt.imshow(mask[0], cmap="Blues")
                     plt.colorbar()
-                    plt.savefig(path+str(y[i].item())+"/figures/"+str(idx)+".png")
+                    plt.savefig(path+str(y[i].item())+"/figures/"+str(idx)+"R.png")
+                    plt.figure()
+                    plt.imshow(mask[1], cmap="Blues")
+                    plt.colorbar()
+                    plt.savefig(path+str(y[i].item())+"/figures/"+str(idx)+"G.png")
+                    plt.figure()
+                    plt.imshow(mask[2], cmap="Blues")
+                    plt.colorbar()
+                    plt.savefig(path+str(y[i].item())+"/figures/"+str(idx)+"B.png")
                     np.save(path+str(y[i].item())+"/masks/"+str(idx)+".npy", mask)
                 idx+=1
     return idx

@@ -5,6 +5,7 @@ from torchvision.transforms import transforms
 from torch.utils.data import DataLoader, Dataset
 import numpy as np
 import torch.nn as nn
+import foolbox as fb
 
 
 def get_dataloaders(data_dir, train_batch_size, test_batch_size, data_transforms=None, shuffle_train=False, shuffle_test=False):
@@ -12,20 +13,22 @@ def get_dataloaders(data_dir, train_batch_size, test_batch_size, data_transforms
     if data_transforms is None:
         data_transforms = {
             'train': transforms.Compose([
-                transforms.Resize(128),
-                transforms.RandomResizedCrop((128,128)),
-                transforms.RandomHorizontalFlip(),
-                transforms.Grayscale(),
-                transforms.RandomAffine(degrees=0.),
+                transforms.Resize((224, 224)),
+                #transforms.Resize(128),
+                #transforms.RandomResizedCrop((128,128)),
+                #transforms.RandomHorizontalFlip(),
+                #transforms.Grayscale(),
+                #transforms.RandomAffine(degrees=0.),
                 transforms.ToTensor(),
-                transforms.Normalize((0.449,), (0.226,))
+                #transforms.Normalize((0.449,), (0.226,))
             ]),
             'test': transforms.Compose([
-                transforms.Resize(128),
-                transforms.CenterCrop((128,128)),
-                transforms.Grayscale(),
+                transforms.Resize((224, 224)),
+                #transforms.Resize(128),
+                #transforms.CenterCrop((128,128)),
+                #transforms.Grayscale(),
                 transforms.ToTensor(),
-                transforms.Normalize((0.449,), (0.226,))
+                #transforms.Normalize((0.449,), (0.226,))
             ]),
         }
 
@@ -52,8 +55,8 @@ class AdversarialDataset(Dataset):
             os.makedirs("data/adv/"+adversarytype+"/"+str(norm)+"/adv")
         if not os.path.exists("data/adv/"+adversarytype+"/"+str(norm)+"/lbl"):
             os.makedirs("data/adv/"+adversarytype+"/"+str(norm)+"/lbl")
-        self.clean_imgs=torch.empty(0,1,128,128)
-        self.adv_imgs=torch.empty(0,1,128,128)
+        self.clean_imgs=torch.empty(0,3,224,224)
+        self.adv_imgs=torch.empty(0,3,224,224)
         self.labels=torch.empty(0, dtype=torch.int64)
 
         device=model.device
