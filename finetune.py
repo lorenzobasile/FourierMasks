@@ -24,7 +24,7 @@ if not os.path.exists('trained_models/'+model_name):
 
 print(f'\nTraining {model_name} model...')
 #model = timm.create_model(model_name, pretrained=True, num_classes=10)
-model = models.resnet18(pretrained=True)
+model = models.resnet18(weights='IMAGENET1K_V1')
 
 #model.conv1 = torch.nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
 model.fc = torch.nn.Linear(512, 10)
