@@ -44,7 +44,7 @@ def singleAdv(models, base_model, clean, x, y, n_epochs, optimizers, lam, idx, p
     toprocess=(np.where((torch.argmax(out, axis=1)==y).cpu())[0]) #only correctly classified images
     for epoch in range(n_epochs):
         for i in toprocess:
-            models[i].train()
+            models[i].mask.train()
             out=models[i](x[i])
             l=loss(out, y[i].reshape(1))
             penalty=models[i].mask.weight.abs().sum()
@@ -55,6 +55,7 @@ def singleAdv(models, base_model, clean, x, y, n_epochs, optimizers, lam, idx, p
             models[i].mask.weight.data.clamp_(0.)
             if epoch==n_epochs-1:
                 correct=torch.argmax(out, axis=1)==y[i]
+                print(correct, y[i])
                 if correct:
                     mask=np.fft.fftshift(models[i].mask.weight.detach().cpu().reshape(3,224,224))
                     plt.figure()
@@ -86,15 +87,14 @@ def singleInv(models, base_model, clean, x, y, n_epochs, optimizers, lam, idx, p
     toprocess=(np.where((torch.argmax(base_out, axis=1)==y).cpu())[0]) #only correctly classified images
     for epoch in range(n_epochs):
         for i in toprocess:
-            models[i].train()
+            models[i].mask.train()
             out=models[i](clean[i])
             loss1 = loss(out, y[i].view(1))
             diff = loss1-loss(base_out[i].view(1,-1), y[i].view(1))
             pippo = torch.clone(diff)
-            l = torch.exp(pippo**2)
-
+            invariance = torch.exp(pippo**2)
             penalty=models[i].mask.weight.abs().sum()
-            l+=penalty*lam
+            l=penalty*lam+invariance
             optimizers[i].zero_grad()
             l.backward()
             optimizers[i].step()

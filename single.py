@@ -32,12 +32,12 @@ batch_size=4
 
 pathAdv="./singleAdv/"+attack+"/"+norm+"/"
 pathInv="./singleInv/"+attack+"/"+norm+"/"
-if not os.path.exists(pathAdv):
+if not os.path.exists(pathAdv) or not os.path.exists(pathInv):
     for i in range(10):
-        os.makedirs(pathAdv+str(i)+"/figures")
-        os.makedirs(pathAdv+str(i)+"/masks")
-        os.makedirs(pathInv+str(i)+"/figures")
-        os.makedirs(pathInv+str(i)+"/masks")
+        os.makedirs(pathAdv+str(i)+"/figures", exist_ok=True)
+        os.makedirs(pathAdv+str(i)+"/masks", exist_ok=True)
+        os.makedirs(pathInv+str(i)+"/figures", exist_ok=True)
+        os.makedirs(pathInv+str(i)+"/masks", exist_ok=True)
 
 dataloaders = get_dataloaders(data_dir=data, train_batch_size=batch_size, test_batch_size=batch_size)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -75,5 +75,5 @@ for x, xadv, y in adv_dataloaders['test']:
         optimizersAdv.append(torch.optim.Adam(modelAdv.parameters(), lr=0.001))
         optimizersInv.append(torch.optim.Adam(modelInv.parameters(), lr=0.001))
 
-    #idxAdv=singleAdv(modelsAdv, base_model, x,  xadv, y, 1000, optimizersAdv, lam, idxAdv, pathAdv)
-    idxInv=singleInv(modelsInv, base_model, x,  xadv, y, 100, optimizersInv, lam, idxInv, pathInv)
+    idxAdv=singleAdv(modelsAdv, base_model, x,  xadv, y, 1000, optimizersAdv, lam, idxAdv, pathAdv)
+    #idxInv=singleInv(modelsInv, base_model, x,  xadv, y, 1000, optimizersInv, lam, idxInv, pathInv)
