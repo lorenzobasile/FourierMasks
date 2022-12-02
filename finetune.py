@@ -1,4 +1,3 @@
-import timm
 import torch
 import argparse
 from data import get_dataloaders
@@ -7,9 +6,10 @@ from utils import train
 import os
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--model', type=str, default="resnet", help="model architecture")
 args = parser.parse_args()
 
-model_name='resnet18'
+model_name=args.model_name
 data='./data/imagenette2-320/'
 batch_size=128
 lr=0.01
@@ -23,38 +23,27 @@ if not os.path.exists('trained_models/'+model_name):
         os.makedirs('trained_models/'+model_name)
 
 print(f'\nTraining {model_name} model...')
-#model = timm.create_model(model_name, pretrained=True, num_classes=10)
-model = models.resnet18(weights='IMAGENET1K_V1')
+if model_name=='resnet':
+    model = models.resnet18(weights='IMAGENET1K_V1')
 
-#model.conv1 = torch.nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
-model.fc = torch.nn.Linear(512, 10)
+    model.fc = torch.nn.Linear(512, 10)
 
-for n,p in model.named_parameters():
-    if n!="fc.weight" and n!="fc.bias":
-        p.requires_grad=False
-    else:
-        print(p)
+    for n,p in model.named_parameters():
+        if n!="fc.weight" and n!="fc.bias":
+            p.requires_grad=False
+        else:
+            print(n)
+elif model_name=='vit':
+    model = models.vit_b_16(weights='IMAGENET1K_V1')
+    model.heads = torch.nn.Linear(512, 10)
 
-#model.features[0] = torch.nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1)
+    for n,p in model.named_parameters():
+        if n!="heads.weight" and n!="heads.bias":
+            p.requires_grad=False
+        else:
+            print(n)
 
-#if model_name=='resnet18':
-# model.features[0]=torch.nn.Conv2d(1, 64, kernel_size=7, stride=1, padding=1)
-#model.conv1=torch.nn.Conv2d(1, 64, kernel_size=7, stride=1, padding=1, bias=False)
-'''
-elif args.model=='vit_base_patch16_224':
-    for p in model.named_parameters():
-        if p[0] == 'patch_embed.proj.bias':
-            biases = p[1]
-        if p[0] == 'patch_embed.proj.weight':
-            weights = p[1]
-    weights=weights.mean(axis=1).reshape(768,1,16,16)
 
-    model.patch_embed.proj = torch.nn.Conv2d(1, 768, (16, 16), (16, 16))
-    model.patch_embed.proj.weight = torch.nn.Parameter(weights)
-    model.patch_embed.proj.bias = torch.nn.Parameter(biases)
-    model.patch_embed.num_patches = (128 // 16) ** 2
-    model.pos_embed = torch.nn.Parameter(torch.zeros(1, model.patch_embed.num_patches + 1, 768))
-'''
 model = model.to(device)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=0)

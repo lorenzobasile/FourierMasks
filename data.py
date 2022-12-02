@@ -14,21 +14,11 @@ def get_dataloaders(data_dir, train_batch_size, test_batch_size, data_transforms
         data_transforms = {
             'train': transforms.Compose([
                 transforms.Resize((224, 224)),
-                #transforms.Resize(128),
-                #transforms.RandomResizedCrop((128,128)),
-                #transforms.RandomHorizontalFlip(),
-                #transforms.Grayscale(),
-                #transforms.RandomAffine(degrees=0.),
                 transforms.ToTensor(),
-                #transforms.Normalize((0.449,), (0.226,))
             ]),
             'test': transforms.Compose([
                 transforms.Resize((224, 224)),
-                #transforms.Resize(128),
-                #transforms.CenterCrop((128,128)),
-                #transforms.Grayscale(),
                 transforms.ToTensor(),
-                #transforms.Normalize((0.449,), (0.226,))
             ]),
         }
 
@@ -40,21 +30,21 @@ def get_dataloaders(data_dir, train_batch_size, test_batch_size, data_transforms
 
 class AdversarialDataset(Dataset):
 
-    def __init__(self, model, adversarytype, dataloader, train, norm):
-        c="data/adv/"+adversarytype+"/"+str(norm)+"/clean/"+train+".pt"
-        a="data/adv/"+adversarytype+"/"+str(norm)+"/adv/"+train+".pt"
-        l="data/adv/"+adversarytype+"/"+str(norm)+"/lbl/"+train+".pt"
+    def __init__(self, model, model_name, attack, dataloader, train):
+        c="data/adv/"+attack+"/"+model_name+"/clean/"+train+".pt"
+        a="data/adv/"+attack+"/"+model_name+"/adv/"+train+".pt"
+        l="data/adv/"+attack+"/"+model_name+"/lbl/"+train+".pt"
         if os.path.isfile(c) and os.path.isfile(a) and os.path.isfile(l):
             self.clean_imgs=torch.load(c)
             self.adv_imgs=torch.load(a)
             self.labels=torch.load(l)
             return
-        if not os.path.exists("data/adv/"+adversarytype+"/"+str(norm)+"/clean"):
-            os.makedirs("data/adv/"+adversarytype+"/"+str(norm)+"/clean")
-        if not os.path.exists("data/adv/"+adversarytype+"/"+str(norm)+"/adv"):
-            os.makedirs("data/adv/"+adversarytype+"/"+str(norm)+"/adv")
-        if not os.path.exists("data/adv/"+adversarytype+"/"+str(norm)+"/lbl"):
-            os.makedirs("data/adv/"+adversarytype+"/"+str(norm)+"/lbl")
+        if not os.path.exists("data/adv/"+attack+"/"+model_name+"/clean"):
+            os.makedirs("data/adv/"+attack+"/"+model_name+"/clean")
+        if not os.path.exists("data/adv/"+attack+"/"+model_name+"/adv"):
+            os.makedirs("data/adv/"+attack+"/"+model_name+"/adv")
+        if not os.path.exists("data/adv/"+attack+"/"+model_name+"/adv"):
+            os.makedirs("data/adv/"+attack+"/"+model_name+"/adv")
         self.clean_imgs=torch.empty(0,3,224,224)
         self.adv_imgs=torch.empty(0,3,224,224)
         self.labels=torch.empty(0, dtype=torch.int64)
@@ -63,44 +53,20 @@ class AdversarialDataset(Dataset):
         for k, (x, y) in enumerate(dataloader):
             x=x.to(device)
             y=y.to(device)
-            if adversarytype=='PGD':
+            if attack=='PGD':
                 adversary = fb.attacks.PGD()
-            elif adversarytype=='FMN':
-                if norm=="1":
-                    adversary = fb.attacks.L1FMNAttack()
-                elif norm=="2":
-                    adversary = fb.attacks.L2FMNAttack()
-                else:
-                    adversary = fb.attacks.LInfFMNAttack()
+            elif attack=='FMN':
+                adversary = fb.attacks.LInfFMNAttack()
             else:
                 adversary = None
-            if adversarytype=='PGD':
-                x_adv, clipped, is_adv = adversary(model, x, y, epsilons=ne)
+            if attack=='PGD':
+                x_adv, clipped, is_adv = adversary(model, x, y, epsilons=0.01)
             else:
                 x_adv, clipped, is_adv = adversary(model, x, y, epsilons=0.01)
             self.clean_imgs=torch.cat((self.clean_imgs, x.detach().cpu()))
             self.adv_imgs=torch.cat((self.adv_imgs, x_adv.detach().cpu()))
             self.labels=torch.cat((self.labels, y.detach().cpu()))
             self.labels.type(torch.LongTensor)
-
-        '''
-        device=torch.device("cuda:0" if next(model.parameters()).is_cuda else "cpu")
-        for k, (x, y) in enumerate(dataloader):
-            print("batch ", k)
-            x=x.to(device)
-            y=y.to(device)
-            if adversarytype=='PGD':
-                adversary = PGD(model, 'cuda')
-                x_adv = adversary.generate(x, y, epsilon=eps, step_size=eps/3, num_steps=10, clip_min=-np.inf, clip_max=np.inf)
-            else:
-                adversary = PGD(model, 'cuda')
-                x_adv = adversary.generate(x, y, epsilon=eps, step_size=eps/3, num_steps=10, bound='l2', clip_min=-np.inf, clip_max=np.inf)
-            self.clean_imgs=torch.cat((self.clean_imgs, x.detach().cpu()))
-            self.adv_imgs=torch.cat((self.adv_imgs, x_adv.detach().cpu()))
-            self.labels=torch.cat((self.labels, y.detach().cpu()))
-            self.labels.type(torch.LongTensor)
-        '''
-
         torch.save(self.clean_imgs, c)
         torch.save(self.adv_imgs, a)
         torch.save(self.labels, l)

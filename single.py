@@ -1,6 +1,5 @@
 import foolbox
 from utils import ADVtrain, singleAdv, singleInv
-import timm
 import torch
 import argparse
 from torch.utils.data import DataLoader
@@ -14,36 +13,35 @@ from model import MaskedClf, Mask
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--epsilon', type=float, default=0.01, help="epsilon")
-parser.add_argument('--norm', type=str, default="infty", help="norm")
-parser.add_argument('--train_batch_size', type=int, default=4, help='train batch size')
-parser.add_argument('--test_batch_size', type=int, default=16, help='test batch size')
-parser.add_argument('--epochs', type=int, default=30, help='number of epochs to train')
-parser.add_argument('--lr', type=float, default=0.1, help='learning rate')
-
+parser.add_argument('--attack', type=str, default="PGD", help="attack type")
+parser.add_argument('--model', type=str, default="resnet", help="model architecture")
 args = parser.parse_args()
 
 lam=0.01
 data='./data/imagenette2-320/'
-model='resnet18'
+model_name=args.model
 attack='FMN'
 norm='infty'
 batch_size=4
 
-pathAdv="./singleAdv/"+attack+"/"+norm+"/"
-pathInv="./singleInv/"+attack+"/"+norm+"/"
+pathAdv="./singleAdv/"+attack+"/"+model_name+"/"
+pathInv="./singleInv/"+attack+"/"+model_name+"/"
 if not os.path.exists(pathAdv) or not os.path.exists(pathInv):
     for i in range(10):
-        os.makedirs(pathAdv+str(i)+"/figures", exist_ok=True)
-        os.makedirs(pathAdv+str(i)+"/masks", exist_ok=True)
-        os.makedirs(pathInv+str(i)+"/figures", exist_ok=True)
-        os.makedirs(pathInv+str(i)+"/masks", exist_ok=True)
+        os.makedirs(pathAdv+"figures/"+str(i), exist_ok=True)
+        os.makedirs(pathAdv+"masks/"+str(i), exist_ok=True)
+        os.makedirs(pathInv+"figures/"+str(i), exist_ok=True)
+        os.makedirs(pathInv+"masks/"+str(i), exist_ok=True)
 
 dataloaders = get_dataloaders(data_dir=data, train_batch_size=batch_size, test_batch_size=batch_size)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-base_model = models.resnet18(pretrained=True)
-base_model.fc = torch.nn.Linear(512, 10)
+if model_name=='resnet':
+    base_model = models.resnet18(weights='IMAGENET1K_V1')
+    base_model.fc = torch.nn.Linear(512, 10)
+elif model_name=='vit':
+    base_model = models.vit_b_16(weights='IMAGENET1K_V1')
+    base_model.fc = torch.nn.Linear(512, 10)
 
 
 base_model = base_model.to(device)
@@ -76,4 +74,4 @@ for x, xadv, y in adv_dataloaders['test']:
         optimizersInv.append(torch.optim.Adam(modelInv.parameters(), lr=0.001))
 
     idxAdv=singleAdv(modelsAdv, base_model, x,  xadv, y, 1000, optimizersAdv, lam, idxAdv, pathAdv)
-    #idxInv=singleInv(modelsInv, base_model, x,  xadv, y, 1000, optimizersInv, lam, idxInv, pathInv)
+    idxInv=singleInv(modelsInv, base_model, x,  xadv, y, 1000, optimizersInv, lam, idxInv, pathInv)
