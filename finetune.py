@@ -9,7 +9,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default="resnet", help="model architecture")
 args = parser.parse_args()
 
-model_name=args.model_name
+model_name=args.model
 data='./data/imagenette2-320/'
 batch_size=128
 lr=0.01
@@ -24,9 +24,9 @@ if not os.path.exists('trained_models/'+model_name):
 
 print(f'\nTraining {model_name} model...')
 if model_name=='resnet':
-    model = models.resnet18(weights='IMAGENET1K_V1')
+    model = models.resnet101(weights='IMAGENET1K_V1')
 
-    model.fc = torch.nn.Linear(512, 10)
+    model.fc = torch.nn.Linear(2048, 10)
 
     for n,p in model.named_parameters():
         if n!="fc.weight" and n!="fc.bias":
@@ -35,13 +35,23 @@ if model_name=='resnet':
             print(n)
 elif model_name=='vit':
     model = models.vit_b_16(weights='IMAGENET1K_V1')
-    model.heads = torch.nn.Linear(512, 10)
+    model.heads = torch.nn.Linear(768, 10)
 
     for n,p in model.named_parameters():
         if n!="heads.weight" and n!="heads.bias":
             p.requires_grad=False
         else:
             print(n)
+elif model_name=='resnet18':
+    model = models.resnet18(weights='IMAGENET1K_V1')
+
+    model.fc = torch.nn.Linear(512, 10)
+
+    for n,p in model.named_parameters():
+        if n!="fc.weight" and n!="fc.bias":
+            p.requires_grad=False
+        else:
+            print(n) 
 
 
 model = model.to(device)

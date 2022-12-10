@@ -43,8 +43,8 @@ class AdversarialDataset(Dataset):
             os.makedirs("data/adv/"+attack+"/"+model_name+"/clean")
         if not os.path.exists("data/adv/"+attack+"/"+model_name+"/adv"):
             os.makedirs("data/adv/"+attack+"/"+model_name+"/adv")
-        if not os.path.exists("data/adv/"+attack+"/"+model_name+"/adv"):
-            os.makedirs("data/adv/"+attack+"/"+model_name+"/adv")
+        if not os.path.exists("data/adv/"+attack+"/"+model_name+"/lbl"):
+            os.makedirs("data/adv/"+attack+"/"+model_name+"/lbl")
         self.clean_imgs=torch.empty(0,3,224,224)
         self.adv_imgs=torch.empty(0,3,224,224)
         self.labels=torch.empty(0, dtype=torch.int64)
@@ -53,10 +53,13 @@ class AdversarialDataset(Dataset):
         for k, (x, y) in enumerate(dataloader):
             x=x.to(device)
             y=y.to(device)
+
             if attack=='PGD':
                 adversary = fb.attacks.PGD()
             elif attack=='FMN':
                 adversary = fb.attacks.LInfFMNAttack()
+            elif attack=='l2':
+                adversary = fb.attacks.L2FMNAttack()
             else:
                 adversary = None
             if attack=='PGD':
@@ -65,6 +68,7 @@ class AdversarialDataset(Dataset):
                 x_adv, clipped, is_adv = adversary(model, x, y, epsilons=0.01)
             self.clean_imgs=torch.cat((self.clean_imgs, x.detach().cpu()))
             self.adv_imgs=torch.cat((self.adv_imgs, x_adv.detach().cpu()))
+
             self.labels=torch.cat((self.labels, y.detach().cpu()))
             self.labels.type(torch.LongTensor)
         torch.save(self.clean_imgs, c)
