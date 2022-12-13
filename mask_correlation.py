@@ -67,6 +67,7 @@ masks2=masks2.reshape(i, -1)
 
 masks1=normalize(masks1)
 masks2=normalize(masks2)
+'''
 print("Using ID:")
 print("ID of first set:")
 data = Data(masks1, maxk=3)
@@ -82,25 +83,52 @@ data = Data(full_data, maxk=3)
 print(data.compute_id_2NN()[0])
 
 print("ID of both (shuffle):")
-full_data=np.concatenate([np.random.perturbation(masks1), masks2], axis=1)
+full_data=np.concatenate([np.random.permutation(masks1), masks2], axis=1)
 data = Data(full_data, maxk=3)
 print(data.compute_id_2NN()[0])
-
+'''
 print("Using scalar product:")
 
 print("Autocorrelation of first set:")
-print(np.mean(np.sum(masks1*masks1, axis=1)))
+norm1=np.linalg.norm(masks1, 2, axis=1)
+dp=np.sum(masks1*masks1, axis=1)
+corrs=np.divide(np.divide(dp, norm1), norm1)
+print(np.mean(corrs))
+
+
 
 print("Autocorrelation of second set:")
-print(np.mean(np.sum(masks2*masks2, axis=1)))
+norm2=np.linalg.norm(masks2, 2, axis=1)
+dp=np.sum(masks2*masks2, axis=1)
+corrs=np.divide(np.divide(dp, norm2), norm2)
+print(np.mean(corrs))
 
 print("Correlation (no shuffle):")
-print(np.mean(np.sum(masks1*masks2, axis=1)))
+dp=np.sum(masks1*masks2, axis=1)
+corrs=np.divide(np.divide(dp, norm1), norm2)
+print("Mean: ", np.mean(corrs))
+print("Std: ", np.std(corrs))
+
+'''
 
 print("Correlation (shuffle):")
 correlations=[]
 for i in range(100):
-    correlations.append(np.mean(np.sum(np.random.permutation(masks1)*masks2, axis=1)))
+    permuted1=np.random.permutation(masks1)
+    norm1=np.linalg.norm(permuted1, 2, axis=1)
+    dp=np.sum(permuted1*masks2, axis=1)
+    corrs=np.divide(np.divide(dp, norm1), norm2)
+    correlations.append(np.mean(corrs))
 correlations=np.array(correlations)
-print("mean: ", np.mean(correlations))
-print("std: ", np.std(correlations))
+print("Mean (of means): ", np.mean(correlations))
+print("Std (of means): ", np.std(correlations))
+
+'''
+
+print("Correlation (shuffle):")
+permuted1=np.random.permutation(masks1)
+norm1=np.linalg.norm(permuted1, 2, axis=1)
+dp=np.sum(permuted1*masks2, axis=1)
+corrs=np.divide(np.divide(dp, norm1), norm2)
+print("Mean: ", np.mean(corrs))
+print("Std: ", np.std(corrs))

@@ -52,9 +52,9 @@ for c in range(10):
 masks=masks.reshape(num_files, -1)[:i]
 perturb=perturb.reshape(num_files, -1)[:i]
 
-masks1=normalize(masks1)
-masks2=normalize(masks2)
-
+masks=normalize(masks)
+perturb=normalize(perturb)
+'''
 print("Using ID:")
 print("ID of masks:")
 data = Data(masks, maxk=3)
@@ -70,25 +70,41 @@ data = Data(full_data, maxk=3)
 print(data.compute_id_2NN()[0])
 
 print("ID of both (shuffle):")
-full_data=np.concatenate([np.random.perturbation(masks1), masks2], axis=1)
+full_data=np.concatenate([np.random.permutation(masks), perturb], axis=1)
 data = Data(full_data, maxk=3)
 print(data.compute_id_2NN()[0])
+'''
 
 print("Using scalar product:")
 
 print("Autocorrelation of masks:")
-print(np.mean(np.sum(masks*masks, axis=1)))
+norm1=np.linalg.norm(masks, 2, axis=1)
+dp=np.sum(masks*masks, axis=1)
+corrs=np.divide(np.divide(dp, norm1), norm1)
+print(np.mean(corrs))
+
+
 
 print("Autocorrelation of perturbations:")
-print(np.mean(np.sum(perturb*perturb, axis=1)))
+norm2=np.linalg.norm(perturb, 2, axis=1)
+dp=np.sum(perturb*perturb, axis=1)
+corrs=np.divide(np.divide(dp, norm2), norm2)
+print(np.mean(corrs))
 
 print("Correlation (no shuffle):")
-print(np.mean(np.sum(masks*perturb, axis=1)))
+dp=np.sum(masks*perturb, axis=1)
+corrs=np.divide(np.divide(dp, norm1), norm2)
+print("Mean: ", np.mean(corrs))
+print("Std: ", np.std(corrs))
 
 print("Correlation (shuffle):")
 correlations=[]
 for i in range(100):
-    correlations.append(np.mean(np.sum(np.random.permutation(masks)*perturb, axis=1)))
+    permuted=np.random.permutation(masks)
+    norm1=np.linalg.norm(permuted, 2, axis=1)
+    dp=np.sum(permuted*perturb, axis=1)
+    corrs=np.divide(np.divide(dp, norm1), norm2)
+    correlations.append(np.mean(corrs))
 correlations=np.array(correlations)
-print("mean: ", np.mean(correlations))
-print("std: ", np.std(correlations))
+print("Mean (of means): ", np.mean(correlations))
+print("Std (of means): ", np.std(correlations))
