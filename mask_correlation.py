@@ -1,4 +1,4 @@
-from dadapy.data import Data
+#from dadapy.data import Data
 import torch
 import argparse
 from torch.utils.data import DataLoader
@@ -50,6 +50,7 @@ path2="./"+folder2+"/"+attack2+"/"+model2+"/masks/"
 max_files=min(sum([len(os.listdir(path1+str(i))) for i in range(10)]), sum([len(os.listdir(path2+str(i))) for i in range(10)]))
 masks1=np.zeros((max_files,3,224,224), dtype=np.float64)
 masks2=np.zeros((max_files,3,224,224), dtype=np.float64)
+labels=np.zeros(max_files)
 i=0
 for c in range(10):
     list1=sorted(os.listdir(path1+str(c)),key=lambda x: int(os.path.splitext(x)[0]))
@@ -58,15 +59,18 @@ for c in range(10):
     for mask in intersection:
         masks1[i]=np.load(path1+str(c)+"/"+mask)
         masks2[i]=np.load(path2+str(c)+"/"+mask)
+        labels[i]=c
         i+=1
 masks1=masks1[:i]
 masks2=masks2[:i]
+labels=labels[:i]
 
 masks1=masks1.reshape(i, -1)
 masks2=masks2.reshape(i, -1)
-
 masks1=normalize(masks1)
 masks2=normalize(masks2)
+
+
 '''
 print("Using ID:")
 print("ID of first set:")
@@ -87,6 +91,7 @@ full_data=np.concatenate([np.random.permutation(masks1), masks2], axis=1)
 data = Data(full_data, maxk=3)
 print(data.compute_id_2NN()[0])
 '''
+
 print("Using scalar product:")
 
 print("Autocorrelation of first set:")
@@ -108,12 +113,28 @@ dp=np.sum(masks1*masks2, axis=1)
 corrs=np.divide(np.divide(dp, norm1), norm2)
 print("Mean: ", np.mean(corrs))
 print("Std: ", np.std(corrs))
+'''
+for i in range(len(masks1)):
+    same_label=np.where(labels==labels[i])[0]
+    diff_label=np.where(labels!=labels[i])[0]
+    max_same=0
+    max_diff=0
+    for m in same_label:
+        corr=np.sum(masks1[i]*masks1[m])/np.linalg.norm(masks1[i], 2)/np.linalg.norm(masks1[m], 2)
+        if corr>max_same:
+            max_same=corr
+    for m in diff_label:
+        corr=np.sum(masks1[i]*masks1[m])/np.linalg.norm(masks1[i], 2)/np.linalg.norm(masks1[m], 2)
+        if corr>max_diff:
+            max_diff=corr
+    print(max_same, max_diff)
 
 '''
 
+
 print("Correlation (shuffle):")
 correlations=[]
-for i in range(100):
+for i in range(20):
     permuted1=np.random.permutation(masks1)
     norm1=np.linalg.norm(permuted1, 2, axis=1)
     dp=np.sum(permuted1*masks2, axis=1)
@@ -124,7 +145,6 @@ print("Mean (of means): ", np.mean(correlations))
 print("Std (of means): ", np.std(correlations))
 
 '''
-
 print("Correlation (shuffle):")
 permuted1=np.random.permutation(masks1)
 norm1=np.linalg.norm(permuted1, 2, axis=1)
@@ -132,3 +152,4 @@ dp=np.sum(permuted1*masks2, axis=1)
 corrs=np.divide(np.divide(dp, norm1), norm2)
 print("Mean: ", np.mean(corrs))
 print("Std: ", np.std(corrs))
+'''
