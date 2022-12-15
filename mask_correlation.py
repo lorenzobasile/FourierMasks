@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 def normalize(x):
     m=np.mean(x)
     s=np.std(x)
-    return (x-m)/s
+    return x
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--attack1', type=str, default="FMN", help="attack type")
@@ -43,6 +43,9 @@ elif args.type2=='inv':
     folder2='singleInv'
 elif args.type2=='invalt':
     folder2='singleInvAlt'
+
+folder1='singleInv'
+folder2='singleInvNew'
 
 path1="./"+folder1+"/"+attack1+"/"+model1+"/masks/"
 path2="./"+folder2+"/"+attack2+"/"+model2+"/masks/"
@@ -106,6 +109,8 @@ print(np.mean(corrs))
 print("Correlation (no shuffle):")
 dp=np.sum(masks1*masks2, axis=1)
 corrs=np.divide(np.divide(dp, norm1), norm2)
+print(corrs)
+print(masks1[np.argmin(corrs)].sum(), masks2[np.argmin(corrs)].sum())
 print("Mean: ", np.mean(corrs))
 print("Std: ", np.std(corrs))
 
