@@ -28,7 +28,7 @@ path="./prova/"
 if not os.path.exists(path):
     for i in range(10):
         os.makedirs(path+str(i), exist_ok=True)
-        
+
 dataloaders = get_dataloaders(data_dir=data, train_batch_size=batch_size, test_batch_size=batch_size)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -50,14 +50,10 @@ fmodel = foolbox.models.PyTorchModel(base_model, bounds=(0.0, 1.0))
 
 print("Model:", model_name)
 
-#adv_dataloaders = {'train': DataLoader(AdversarialDataset(fmodel, model_name, attack, dataloaders['train'], 'train'), batch_size=batch_size, shuffle=False
 adv_dataloaders={'test': DataLoader(AdversarialDataset(fmodel, model_name, attack, dataloaders['test'], 'test'), batch_size=batch_size, shuffle=False)}
 
-idxAdv=0
-idxInv=0
-
 for x, xadv, y in adv_dataloaders['test']:
-    masks=np.zeros((5,3*224*224), dtype=np.float64)
+    masks=np.zeros((5,3*224*224), dtype=np.float64) # 5 runs on image 0
     x=x.to(device)
     xadv=xadv.to(device)
     y=y.to(device)
@@ -68,22 +64,18 @@ for x, xadv, y in adv_dataloaders['test']:
         for p in modelInv.clf.parameters():
             p.requires_grad=False
         optimizer=torch.optim.Adam(modelInv.parameters(), lr=0.001)
-        scheduler=torch.optim.lr_scheduler.ExponentialLR(optimizer,gamma=1)
+        scheduler=torch.optim.lr_scheduler.ExponentialLR(optimizer,gamma=1) #useless with gamma=1
         loss=torch.nn.CrossEntropyLoss()
         base_out=base_model(x)
-        out_adv=base_model(xadv)
-        wereadv=(np.where(torch.logical_and((torch.argmax(base_out, axis=1)==y).cpu(), (torch.argmax(out_adv, axis=1)!=y).cpu()))[0]) #only correctly classified images
-        for epoch in range(2000):       
+        for epoch in range(2000):
             modelInv.mask.train()
             out=modelInv(x[0])
             loss1=loss(out,y[0].reshape(1))
-            diff = loss1-loss(base_out[0].view(1,-1), y[0].reshape(1))
-            #pippo = torch.clone(diff)
-            invariance = torch.exp(diff**2)
-            #print(invariance)
+            diff = loss1-loss(base_out[0].view(1,-1), y[0].reshape(1)) #nikos' way
+            invariance = torch.exp(diff**2) #nikos' way
+            #invariance=loss1 #the other way
             penalty=modelInv.mask.weight.abs().sum()
             l=penalty*lam+invariance
-            print(l)
             losses[i].append(l.item())
             optimizer.zero_grad()
             l.backward()
@@ -92,7 +84,7 @@ for x, xadv, y in adv_dataloaders['test']:
             modelInv.mask.weight.data.clamp_(0.)
             mask=np.fft.fftshift(modelInv.mask.weight.detach().cpu().reshape(3,224,224))
             np.save(path+str(i)+"/"+str(epoch)+".npy", mask)
-        print(torch.argmax(out, axis=1))
+        #only at last epoch save figs
         masks[i]=mask.reshape(-1)
         plt.figure()
         plt.imshow(mask[0], cmap='Blues')
@@ -106,6 +98,7 @@ for x, xadv, y in adv_dataloaders['test']:
         plt.imshow(mask[2], cmap='Blues')
         plt.colorbar()
         plt.savefig('./testB.png')
+    #for each pair compute correlation, it should ideally be 1
     for j in range(5):
         for k in range(5):
             print(j, k, "\n")
