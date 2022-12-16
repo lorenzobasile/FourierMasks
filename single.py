@@ -1,5 +1,5 @@
 import foolbox
-from utils import ADVtrain, singleAdv, singleInv
+from utils import singleAdv, singleInv
 import torch
 import argparse
 from torch.utils.data import DataLoader
@@ -17,15 +17,15 @@ parser.add_argument('--attack', type=str, default="PGD", help="attack type")
 parser.add_argument('--model', type=str, default="resnet", help="model architecture")
 args = parser.parse_args()
 
-lam=0.0001
+lam=0.001
 data='./data/imagenette2-320/'
 model_name=args.model
 attack=args.attack
 norm='infty'
 batch_size=16
 
-pathAdv="./singleAdvNew/"+attack+"/"+model_name+"/"
-pathInv="./singleInv1/"+attack+"/"+model_name+"/"
+pathAdv="./singleAdv/"+attack+"/"+model_name+"/"
+pathInv="./singleInv/"+attack+"/"+model_name+"/"
 if not os.path.exists(pathAdv) or not os.path.exists(pathInv):
     for i in range(10):
         os.makedirs(pathAdv+"figures/"+str(i), exist_ok=True)
@@ -54,7 +54,6 @@ fmodel = foolbox.models.PyTorchModel(base_model, bounds=(0.0, 1.0))
 
 print("Model:", model_name)
 
-#adv_dataloaders = {'train': DataLoader(AdversarialDataset(fmodel, model_name, attack, dataloaders['train'], 'train'), batch_size=batch_size, shuffle=False
 adv_dataloaders={'test': DataLoader(AdversarialDataset(fmodel, model_name, attack, dataloaders['test'], 'test'), batch_size=batch_size, shuffle=False)}
 
 idxAdv=0
@@ -76,9 +75,9 @@ for x, xadv, y in adv_dataloaders['test']:
         modelsAdv.append(modelAdv)
         modelsInv.append(modelInv)
         optimizersAdv.append(torch.optim.Adam(modelAdv.parameters(), lr=0.01))
-        optimizersInv.append(torch.optim.Adam(modelInv.parameters(), lr=0.1))
+        optimizersInv.append(torch.optim.Adam(modelInv.parameters(), lr=0.01))
         schedulers.append(torch.optim.lr_scheduler.ExponentialLR(optimizersInv[i], gamma=0.99))
 
-    #idxAdv=singleAdv(modelsAdv, base_model, x,  xadv, y, 500, optimizersAdv, lam, idxAdv, pathAdv)
+    idxAdv=singleAdv(modelsAdv, base_model, x,  xadv, y, 500, optimizersAdv, lam, idxAdv, pathAdv)
     idxInv=singleInv(modelsInv, base_model, x,  xadv, y, 500, optimizersInv, schedulers, lam, idxInv, pathInv)
     break

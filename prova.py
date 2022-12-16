@@ -1,5 +1,4 @@
 import foolbox
-from utils import ADVtrain, singleAdv, singleInv
 import torch
 import argparse
 from torch.utils.data import DataLoader
@@ -89,7 +88,7 @@ for lam in [0.001]:
                     print(penalty)
                     #only at last epoch save figs
                     masks[i]=mask.reshape(-1)
-                    
+
                     plt.figure()
                     plt.imshow(mask[0], cmap='Blues')
                     plt.colorbar()
@@ -102,7 +101,7 @@ for lam in [0.001]:
                     plt.imshow(mask[2], cmap='Blues')
                     plt.colorbar()
                     plt.savefig(path+'ADVimage_'+str(image)+'_run_'+str(i)+'_B.png')
-                    
+
                 #for each pair compute correlation, it should ideally be 1
                 for j in range(5):
                     for k in range(5):
