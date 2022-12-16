@@ -69,9 +69,9 @@ for lam in [0.001]:
                     scheduler=torch.optim.lr_scheduler.ExponentialLR(optimizer,gamma=1) #useless with gamma=1
                     loss=torch.nn.CrossEntropyLoss()
                     base_out=base_model(x)
-                    for epoch in range(200000):
+                    for epoch in range(500):
                         modelAdv.mask.train()
-                        out=modelAdv(xadv[image])
+                        out=modelAdv(x[image])
                         loss1=loss(out,y[image].reshape(1))
                         #diff = loss1-loss(base_out[0].view(1,-1), y[0].reshape(1)) #nikos' way
                         #invariance = torch.exp(diff**2) #nikos' way
@@ -88,19 +88,19 @@ for lam in [0.001]:
                     print(penalty)
                     #only at last epoch save figs
                     masks[i]=mask.reshape(-1)
-
+                    print(mask[0][:10,:10])
                     plt.figure()
-                    plt.imshow(mask[0], cmap='Blues')
+                    plt.imshow(mask[0]/np.max(mask[0]), cmap='Blues')
                     plt.colorbar()
-                    plt.savefig(path+'ADVimage_'+str(image)+'_run_'+str(i)+'_R.png')
+                    plt.savefig(path+'image_'+str(image)+'_run_'+str(i)+'_R.png')
                     plt.figure()
-                    plt.imshow(mask[1], cmap='Blues')
+                    plt.imshow(mask[1]/np.max(mask[1]), cmap='Blues')
                     plt.colorbar()
-                    plt.savefig(path+'ADVimage_'+str(image)+'_run_'+str(i)+'_G.png')
+                    plt.savefig(path+'image_'+str(image)+'_run_'+str(i)+'_G.png')
                     plt.figure()
-                    plt.imshow(mask[2], cmap='Blues')
+                    plt.imshow(mask[2]/np.max(mask[2]), cmap='Blues')
                     plt.colorbar()
-                    plt.savefig(path+'ADVimage_'+str(image)+'_run_'+str(i)+'_B.png')
+                    plt.savefig(path+'image_'+str(image)+'_run_'+str(i)+'_B.png')
 
                 #for each pair compute correlation, it should ideally be 1
                 for j in range(5):
