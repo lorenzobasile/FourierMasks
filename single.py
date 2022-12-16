@@ -77,5 +77,5 @@ for x, xadv, y in adv_dataloaders['test']:
         optimizersInv.append(torch.optim.Adam(modelInv.parameters(), lr=0.01))
        # schedulers.append(torch.optim.lr_scheduler.ExponentialLR(optimizersInv[i], gamma=0.99))
 
-    idxAdv=singleAdv(modelsAdv, base_model, x,  xadv, y, 500, optimizersAdv, lam, idxAdv, pathAdv)
-    idxInv=singleInv(modelsInv, base_model, x,  xadv, y, 500, optimizersInv, lam, idxInv, pathInv)
+    #idxAdv=singleAdv(modelsAdv, base_model, x,  xadv, y, 500, optimizersAdv, lam, idxAdv, pathAdv)
+    idxInv=singleInv(base_model, x,  xadv, y, 500, lam, idxInv, pathInv)

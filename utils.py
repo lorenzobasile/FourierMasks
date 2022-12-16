@@ -82,7 +82,7 @@ def singleAdv(models, base_model, clean, x, y, n_epochs, optimizers, lam, idx, p
                 idx+=1
     return idx
 
-def singleInv(models, base_model, clean, x, y, n_epochs, optimizers, lam, idx, path):
+def singleInv(base_model, clean, x, y, n_epochs, lam, idx, path):
 
     loss=torch.nn.CrossEntropyLoss()
     device=torch.device("cuda:0" if next(base_model.parameters()).is_cuda else "cpu")
@@ -97,6 +97,7 @@ def singleInv(models, base_model, clean, x, y, n_epochs, optimizers, lam, idx, p
 
     for i in range(len(x)):
         if y[i]==0:
+            print("Image ", i)
             model=MaskedClf(Mask().to(device), base_model)
             for p in model.clf.parameters():
                 p.requires_grad=False
@@ -112,7 +113,9 @@ def singleInv(models, base_model, clean, x, y, n_epochs, optimizers, lam, idx, p
                 l.backward()
                 optimizer.step()
                 model.mask.weight.data.clamp_(0.)
-                if epoch==n_epoch-1:
+                if epoch==n_epochs-1:
+                    print(torch.argmax(out))
+                    print(losses[i])
                     correct=torch.argmax(out, axis=1)==y[i]
                     if correct and i in werecorrect:
                         mask=np.fft.fftshift(model.mask.weight.detach().cpu().reshape(3,224,224))
