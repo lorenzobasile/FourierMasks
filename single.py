@@ -64,5 +64,5 @@ for x, xadv, y in adv_dataloaders['test']:
     modelsInv=[]
     optimizersAdv=[]
     optimizersInv=[]
-    idxAdv=singleAdv(modelsAdv, base_model, x,  xadv, y, 500, optimizersAdv, lam, idxAdv, pathAdv)
+    idxAdv=singleAdv(base_model, x,  xadv, y, 500, lam, idxAdv, pathAdv)
     idxInv=singleInv(base_model, x,  xadv, y, 500, lam, idxInv, pathInv)
