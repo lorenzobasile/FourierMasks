@@ -12,6 +12,10 @@ def normalize(x):
     m=np.mean(x)
     s=np.std(x)
     return x
+def remove_fund(x):
+    x[:,112,112]=0.0
+    return x
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--attack1', type=str, default="FMN", help="attack type")
@@ -45,7 +49,7 @@ elif args.type2=='invalt':
     folder2='singleInvAlt'
 
 folder1='singleInv'
-folder2='singleInvNew'
+folder2='singleAdv'
 
 path1="./"+folder1+"/"+attack1+"/"+model1+"/masks/"
 path2="./"+folder2+"/"+attack2+"/"+model2+"/masks/"
@@ -53,6 +57,8 @@ path2="./"+folder2+"/"+attack2+"/"+model2+"/masks/"
 max_files=min(sum([len(os.listdir(path1+str(i))) for i in range(10)]), sum([len(os.listdir(path2+str(i))) for i in range(10)]))
 masks1=np.zeros((max_files,3,224,224), dtype=np.float64)
 masks2=np.zeros((max_files,3,224,224), dtype=np.float64)
+mul=np.zeros((max_files,3,224,224), dtype=np.float64)
+mul_w=np.zeros((max_files,3,224,224), dtype=np.float64)
 labels=np.zeros(max_files)
 i=0
 for c in range(10):
@@ -60,18 +66,51 @@ for c in range(10):
     list2=sorted(os.listdir(path2+str(c)),key=lambda x: int(os.path.splitext(x)[0]))
     intersection=[x for x in list1 if x in list2]
     for mask in intersection:
-        masks1[i]=np.load(path1+str(c)+"/"+mask)
-        masks2[i]=np.load(path2+str(c)+"/"+mask)
+        masks1[i]=remove_fund(np.load(path1+str(c)+"/"+mask))
+        masks2[i]=remove_fund(np.load(path2+str(c)+"/"+mask))
+        if i>1:
+            mul[i]=masks1[i]*masks2[i]
+            mul_w[i]=masks1[i]*masks2[i-1]
         labels[i]=c
         i+=1
 masks1=masks1[:i]
 masks2=masks2[:i]
 labels=labels[:i]
 
+masks1=np.sum(masks1, axis=1)
+print(masks1.shape)
+masks2=np.sum(masks2, axis=1)
+
 masks1=masks1.reshape(i, -1)
 masks2=masks2.reshape(i, -1)
 masks1=normalize(masks1)
 masks2=normalize(masks2)
+
+for i in range(10):
+    plt.figure()
+    plt.imshow(mul[i,0,100:120,100:120], cmap="Blues")
+    plt.colorbar()
+    plt.savefig("./good"+str(i)+"R.png")
+    plt.figure()
+    plt.imshow(mul[i,1,100:120,100:120], cmap="Blues")
+    plt.colorbar()
+    plt.savefig("./good"+str(i)+"G.png")
+    plt.figure()
+    plt.imshow(mul[i,2,100:120,100:120], cmap="Blues")
+    plt.colorbar()
+    plt.savefig("./good"+str(i)+"B.png")
+    plt.figure()
+    plt.imshow(mul_w[i,0,100:120,100:120], cmap="Blues")
+    plt.colorbar()
+    plt.savefig("./bad"+str(i)+"R.png")
+    plt.figure()
+    plt.imshow(mul_w[i,1,100:120,100:120], cmap="Blues")
+    plt.colorbar()
+    plt.savefig("./bad"+str(i)+"G.png")
+    plt.figure()
+    plt.imshow(mul_w[i,2,100:120,100:120], cmap="Blues")
+    plt.colorbar()
+    plt.savefig("./bad"+str(i)+"B.png")
 
 
 '''
