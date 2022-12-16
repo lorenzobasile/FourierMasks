@@ -64,8 +64,7 @@ for x, xadv, y in adv_dataloaders['test']:
     modelsInv=[]
     optimizersAdv=[]
     optimizersInv=[]
-    schedulers=[]
-    for i in range(2):
+    for i in range(len(x)):
         modelAdv=MaskedClf(Mask().to(device), base_model)
         modelInv=MaskedClf(Mask().to(device), base_model)
         for p in modelAdv.clf.parameters():
@@ -76,8 +75,7 @@ for x, xadv, y in adv_dataloaders['test']:
         modelsInv.append(modelInv)
         optimizersAdv.append(torch.optim.Adam(modelAdv.parameters(), lr=0.01))
         optimizersInv.append(torch.optim.Adam(modelInv.parameters(), lr=0.01))
-        schedulers.append(torch.optim.lr_scheduler.ExponentialLR(optimizersInv[i], gamma=0.99))
+       # schedulers.append(torch.optim.lr_scheduler.ExponentialLR(optimizersInv[i], gamma=0.99))
 
     idxAdv=singleAdv(modelsAdv, base_model, x,  xadv, y, 500, optimizersAdv, lam, idxAdv, pathAdv)
-    idxInv=singleInv(modelsInv, base_model, x,  xadv, y, 500, optimizersInv, schedulers, lam, idxInv, pathInv)
-    break
+    idxInv=singleInv(modelsInv, base_model, x,  xadv, y, 500, optimizersInv, lam, idxInv, pathInv)

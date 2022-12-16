@@ -81,7 +81,7 @@ def singleAdv(models, base_model, clean, x, y, n_epochs, optimizers, lam, idx, p
                 idx+=1
     return idx
 
-def singleInv(models, base_model, clean, x, y, n_epochs, optimizers, schedulers, lam, idx, path):
+def singleInv(models, base_model, clean, x, y, n_epochs, optimizers, lam, idx, path):
 
     loss=torch.nn.CrossEntropyLoss()
     device=torch.device("cuda:0" if next(models[0].parameters()).is_cuda else "cpu")
@@ -94,7 +94,7 @@ def singleInv(models, base_model, clean, x, y, n_epochs, optimizers, schedulers,
     losses=[[] for i in range(len(x))]
     werecorrect=(np.where((torch.argmax(base_out, axis=1)==y).cpu())[0]) #only correctly classified images
     for epoch in range(n_epochs):
-        for i in range(1):
+        for i in range(len(x)):
             if y[i]==0:
                 models[i].mask.train()
                 out=models[i](clean[i])
@@ -109,29 +109,27 @@ def singleInv(models, base_model, clean, x, y, n_epochs, optimizers, schedulers,
                 l.backward()
                 optimizers[i].step()
                 models[i].mask.weight.data.clamp_(0.)
-                schedulers[i].step()
-            if epoch<=n_epochs-1:
+            if epoch==n_epochs-1:
                 if y[i]==0:
                     correct=torch.argmax(out, axis=1)==y[i]
                     if correct and i in werecorrect:
                         mask=np.fft.fftshift(models[i].mask.weight.detach().cpu().reshape(3,224,224))
-                        #plt.figure(figsize=(30,20))
-                        #plt.plot(losses[i])
-                        #plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"loss"+str(epoch)+".png")
+                        plt.figure(figsize=(30,20))
+                        plt.plot(losses[i])
+                        plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"loss.png")
                         plt.figure()
                         plt.imshow(mask[0], cmap="Blues")
                         plt.colorbar()
-                        plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"R_epoch"+str(epoch)+".png")
+                        plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"R.png")
                         plt.figure()
                         plt.imshow(mask[1], cmap="Blues")
                         plt.colorbar()
-                        plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"G_epoch"+str(epoch)+".png")
+                        plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"G.png")
                         plt.figure()
                         plt.imshow(mask[2], cmap="Blues")
                         plt.colorbar()
-                        plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"B_epoch"+str(epoch)+".png")
-                        np.save(path+"masks/"+str(y[i].item())+"/"+str(idx)+"_epoch_"+str(epoch)+".npy", mask)
+                        plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"B.png")
+                        np.save(path+"masks/"+str(y[i].item())+"/"+str(idx)+".npy", mask)
 
                 idx+=1
-    print(losses)
     return idx
