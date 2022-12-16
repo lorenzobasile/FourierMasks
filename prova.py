@@ -51,56 +51,61 @@ fmodel = foolbox.models.PyTorchModel(base_model, bounds=(0.0, 1.0))
 print("Model:", model_name)
 
 adv_dataloaders={'test': DataLoader(AdversarialDataset(fmodel, model_name, attack, dataloaders['test'], 'test'), batch_size=batch_size, shuffle=False)}
-
-for x, xadv, y in adv_dataloaders['test']:
-    masks=np.zeros((5,3*224*224), dtype=np.float64) # 5 runs on image 0
-    x=x.to(device)
-    xadv=xadv.to(device)
-    y=y.to(device)
-    losses=[[] for i in range(5)]
-    for i in range(5):
-        print(i)
-        modelInv=MaskedClf(Mask().to(device), base_model)
-        for p in modelInv.clf.parameters():
-            p.requires_grad=False
-        optimizer=torch.optim.Adam(modelInv.parameters(), lr=0.001)
-        scheduler=torch.optim.lr_scheduler.ExponentialLR(optimizer,gamma=1) #useless with gamma=1
-        loss=torch.nn.CrossEntropyLoss()
-        base_out=base_model(x)
-        for epoch in range(2000):
-            modelInv.mask.train()
-            out=modelInv(x[0])
-            loss1=loss(out,y[0].reshape(1))
-            diff = loss1-loss(base_out[0].view(1,-1), y[0].reshape(1)) #nikos' way
-            invariance = torch.exp(diff**2) #nikos' way
-            #invariance=loss1 #the other way
-            penalty=modelInv.mask.weight.abs().sum()
-            l=penalty*lam+invariance
-            losses[i].append(l.item())
-            optimizer.zero_grad()
-            l.backward()
-            optimizer.step()
-            scheduler.step()
-            modelInv.mask.weight.data.clamp_(0.)
-            mask=np.fft.fftshift(modelInv.mask.weight.detach().cpu().reshape(3,224,224))
-            np.save(path+str(i)+"/"+str(epoch)+".npy", mask)
-        #only at last epoch save figs
-        masks[i]=mask.reshape(-1)
-        plt.figure()
-        plt.imshow(mask[0], cmap='Blues')
-        plt.colorbar()
-        plt.savefig('./testR.png')
-        plt.figure()
-        plt.imshow(mask[1], cmap='Blues')
-        plt.colorbar()
-        plt.savefig('./testG.png')
-        plt.figure()
-        plt.imshow(mask[2], cmap='Blues')
-        plt.colorbar()
-        plt.savefig('./testB.png')
-    #for each pair compute correlation, it should ideally be 1
-    for j in range(5):
-        for k in range(5):
-            print(j, k, "\n")
-            print(np.sum(masks[j]*masks[k])/np.linalg.norm(masks[j], 2)/np.linalg.norm(masks[k], 2))
-    break
+for lam in [0.001]:
+    for lr in [0.01]:
+        for image in [0,1,2,3,4]:
+            print("lam: ", lam, " lr: ", lr, " image: ", image)
+            for x, xadv, y in adv_dataloaders['test']:
+                masks=np.zeros((5,3*224*224), dtype=np.float64) # 5 runs on image 0
+                x=x.to(device)
+                xadv=xadv.to(device)
+                y=y.to(device)
+                losses=[[] for i in range(5)]
+                for i in range(5):
+                    print(i)
+                    modelAdv=MaskedClf(Mask().to(device), base_model)
+                    for p in modelAdv.clf.parameters():
+                        p.requires_grad=False
+                    optimizer=torch.optim.Adam(modelAdv.parameters(), lr=lr)
+                    scheduler=torch.optim.lr_scheduler.ExponentialLR(optimizer,gamma=1) #useless with gamma=1
+                    loss=torch.nn.CrossEntropyLoss()
+                    base_out=base_model(x)
+                    for epoch in range(200000):
+                        modelAdv.mask.train()
+                        out=modelAdv(xadv[image])
+                        loss1=loss(out,y[image].reshape(1))
+                        #diff = loss1-loss(base_out[0].view(1,-1), y[0].reshape(1)) #nikos' way
+                        #invariance = torch.exp(diff**2) #nikos' way
+                        invariance=loss1 #the other way
+                        penalty=modelAdv.mask.weight.abs().sum()
+                        l=penalty*lam+invariance
+                        losses[i].append(l.item())
+                        optimizer.zero_grad()
+                        l.backward()
+                        optimizer.step()
+                        scheduler.step()
+                        modelAdv.mask.weight.data.clamp_(0.0)
+                        mask=np.fft.fftshift(modelAdv.mask.weight.detach().cpu().reshape(3,224,224))
+                    print(penalty)
+                    #only at last epoch save figs
+                    masks[i]=mask.reshape(-1)
+                    
+                    plt.figure()
+                    plt.imshow(mask[0], cmap='Blues')
+                    plt.colorbar()
+                    plt.savefig(path+'ADVimage_'+str(image)+'_run_'+str(i)+'_R.png')
+                    plt.figure()
+                    plt.imshow(mask[1], cmap='Blues')
+                    plt.colorbar()
+                    plt.savefig(path+'ADVimage_'+str(image)+'_run_'+str(i)+'_G.png')
+                    plt.figure()
+                    plt.imshow(mask[2], cmap='Blues')
+                    plt.colorbar()
+                    plt.savefig(path+'ADVimage_'+str(image)+'_run_'+str(i)+'_B.png')
+                    
+                #for each pair compute correlation, it should ideally be 1
+                for j in range(5):
+                    for k in range(5):
+                        print(j, k, "\n")
+                        print(np.sum(masks[j]*masks[k])/np.linalg.norm(masks[j], 2)/np.linalg.norm(masks[k], 2))
+                break
