@@ -45,44 +45,43 @@ def singleAdv(base_model, clean, adv, y, n_epochs, lam, idx, path):
     losses=[[] for i in range(n)]
     wereadv=(np.where(torch.logical_and((torch.argmax(base_out, axis=1)==y).cpu(), (torch.argmax(base_adv, axis=1)!=y).cpu()))[0]) #only correctly classified images
     for i in range(n):
-        if y[i]==0:
-            print("Image ", i)
-            model=MaskedClf(Mask().to(device), base_model)
-            for p in model.clf.parameters():
-                p.requires_grad=False
-            model.mask.train()
-            optimizer=torch.optim.Adam(model.mask.parameters(), lr=0.01)
-            for epoch in range(n_epochs):
-                out=model(adv[i])
-                l=loss(out, y[i].reshape(1))
-                penalty=model.mask.weight.abs().sum()
-                l+=penalty*lam
-                losses[i].append(l.item())
-                optimizer.zero_grad()
-                l.backward()
-                optimizer.step()
-                model.mask.weight.data.clamp_(0.)
-                if epoch==n_epochs-1:
-                    correct = torch.argmax(out, axis=1)==y[i] and torch.argmax(model(clean[i]), axis=1)==y[i]
-                    if correct and i in wereadv:
-                        mask=np.fft.fftshift(model.mask.weight.detach().cpu().reshape(3,224,224))
-                        plt.figure(figsize=(30,20))
-                        plt.plot(losses[i])
-                        plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"loss.png")
-                        plt.figure()
-                        plt.imshow(mask[0], cmap="Blues")
-                        plt.colorbar()
-                        plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"R.png")
-                        plt.figure()
-                        plt.imshow(mask[1], cmap="Blues")
-                        plt.colorbar()
-                        plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"G.png")
-                        plt.figure()
-                        plt.imshow(mask[2], cmap="Blues")
-                        plt.colorbar()
-                        plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"B.png")
-                        np.save(path+"masks/"+str(y[i].item())+"/"+str(idx)+".npy", mask)
-                    idx+=1
+        model=MaskedClf(Mask().to(device), base_model)
+        for p in model.clf.parameters():
+            p.requires_grad=False
+        model.mask.train()
+        optimizer=torch.optim.Adam(model.mask.parameters(), lr=0.01)
+        for epoch in range(n_epochs):
+            out=model(adv[i])
+            l=loss(out, y[i].reshape(1))
+            penalty=model.mask.weight.abs().sum()
+            l+=penalty*lam
+            losses[i].append(l.item())
+            optimizer.zero_grad()
+            l.backward()
+            optimizer.step()
+            model.mask.weight.data.clamp_(0.)
+            if epoch==n_epochs-1:
+                model.eval()
+                correct = torch.argmax(out, axis=1)==y[i] and torch.argmax(model(clean[i]), axis=1)==y[i]
+                if correct and i in wereadv:
+                    mask=np.fft.fftshift(model.mask.weight.detach().cpu().reshape(3,224,224))
+                    plt.figure(figsize=(30,20))
+                    plt.plot(losses[i])
+                    plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"loss.png")
+                    plt.figure()
+                    plt.imshow(mask[0], cmap="Blues")
+                    plt.colorbar()
+                    plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"R.png")
+                    plt.figure()
+                    plt.imshow(mask[1], cmap="Blues")
+                    plt.colorbar()
+                    plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"G.png")
+                    plt.figure()
+                    plt.imshow(mask[2], cmap="Blues")
+                    plt.colorbar()
+                    plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"B.png")
+                    np.save(path+"masks/"+str(y[i].item())+"/"+str(idx)+".npy", mask)
+                idx+=1
     return idx
 
 
@@ -101,43 +100,41 @@ def singleInv(base_model, clean, x, y, n_epochs, lam, idx, path):
     werecorrect=(np.where((torch.argmax(base_out, axis=1)==y).cpu())[0]) #only correctly classified images
 
     for i in range(n):
-        if y[i]==0:
-            print("Image ", i)
-            model=MaskedClf(Mask().to(device), base_model)
-            for p in model.clf.parameters():
-                p.requires_grad=False
-            model.mask.train()
-            optimizer=torch.optim.Adam(model.mask.parameters(), lr=0.01)
-            for epoch in range(n_epochs):
-                out=model(clean[i])
-                invariance=loss(out, y[i].reshape(1))
-                penalty=model.mask.weight.abs().sum()
-                l=penalty*lam+invariance
-                losses[i].append(l.item())
-                optimizer.zero_grad()
-                l.backward()
-                optimizer.step()
-                model.mask.weight.data.clamp_(0.)
-                if epoch==n_epochs-1:
-                    correct=torch.argmax(out, axis=1)==y[i]
-                    if correct and i in werecorrect:
-                        mask=np.fft.fftshift(model.mask.weight.detach().cpu().reshape(3,224,224))
-                        plt.figure(figsize=(30,20))
-                        plt.plot(losses[i])
-                        plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"loss.png")
-                        plt.figure()
-                        plt.imshow(mask[0], cmap="Blues")
-                        plt.colorbar()
-                        plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"R.png")
-                        plt.figure()
-                        plt.imshow(mask[1], cmap="Blues")
-                        plt.colorbar()
-                        plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"G.png")
-                        plt.figure()
-                        plt.imshow(mask[2], cmap="Blues")
-                        plt.colorbar()
-                        plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"B.png")
-                        np.save(path+"masks/"+str(y[i].item())+"/"+str(idx)+".npy", mask)
-                    idx+=1
+        model=MaskedClf(Mask().to(device), base_model)
+        for p in model.clf.parameters():
+            p.requires_grad=False
+        model.mask.train()
+        optimizer=torch.optim.Adam(model.mask.parameters(), lr=0.01)
+        for epoch in range(n_epochs):
+            out=model(clean[i])
+            invariance=loss(out, y[i].reshape(1))
+            penalty=model.mask.weight.abs().sum()
+            l=penalty*lam+invariance
+            losses[i].append(l.item())
+            optimizer.zero_grad()
+            l.backward()
+            optimizer.step()
+            model.mask.weight.data.clamp_(0.)
+            if epoch==n_epochs-1:
+                correct=torch.argmax(out, axis=1)==y[i]
+                if correct and i in werecorrect:
+                    mask=np.fft.fftshift(model.mask.weight.detach().cpu().reshape(3,224,224))
+                    plt.figure(figsize=(30,20))
+                    plt.plot(losses[i])
+                    plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"loss.png")
+                    plt.figure()
+                    plt.imshow(mask[0], cmap="Blues")
+                    plt.colorbar()
+                    plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"R.png")
+                    plt.figure()
+                    plt.imshow(mask[1], cmap="Blues")
+                    plt.colorbar()
+                    plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"G.png")
+                    plt.figure()
+                    plt.imshow(mask[2], cmap="Blues")
+                    plt.colorbar()
+                    plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"B.png")
+                    np.save(path+"masks/"+str(y[i].item())+"/"+str(idx)+".npy", mask)
+                idx+=1
     return idx
 
