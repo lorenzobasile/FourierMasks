@@ -30,8 +30,8 @@ def train(model, dataloaders, n_epochs, optimizer, scheduler=None):
                     out=model(x.to(device))
                     correct+=(torch.argmax(out, axis=1)==y.to(device)).sum().item()
             print("Accuracy on "+i+" set: ", correct/len(dataloaders[i].dataset))
-              
-  
+
+
 def singleAdv(base_model, clean, adv, y, n_epochs, lam, idx, path):
 
     loss=torch.nn.CrossEntropyLoss()
@@ -50,7 +50,8 @@ def singleAdv(base_model, clean, adv, y, n_epochs, lam, idx, path):
             p.requires_grad=False
         model.mask.train()
         optimizer=torch.optim.Adam(model.mask.parameters(), lr=0.01)
-        for epoch in range(n_epochs):
+        epoch=0
+        while True:
             out=model(adv[i])
             l=loss(out, y[i].reshape(1))
             penalty=model.mask.weight.abs().sum()
@@ -60,7 +61,8 @@ def singleAdv(base_model, clean, adv, y, n_epochs, lam, idx, path):
             l.backward()
             optimizer.step()
             model.mask.weight.data.clamp_(0.)
-            if epoch==n_epochs-1:
+            epoch+=1
+            if epoch>500 and abs(l.item()-np.mean(losses[i][-20:]))<1e-5:
                 model.eval()
                 correct = torch.argmax(out, axis=1)==y[i] and torch.argmax(model(clean[i]), axis=1)==y[i]
                 if correct and i in wereadv:
@@ -137,4 +139,3 @@ def singleInv(base_model, clean, x, y, n_epochs, lam, idx, path):
                     np.save(path+"masks/"+str(y[i].item())+"/"+str(idx)+".npy", mask)
                 idx+=1
     return idx
-

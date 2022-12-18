@@ -62,6 +62,7 @@ mul_w=np.zeros((max_files,3,224,224), dtype=np.float64)
 labels=np.zeros(max_files)
 i=0
 for c in range(10):
+    print(c)
     list1=sorted(os.listdir(path1+str(c)),key=lambda x: int(os.path.splitext(x)[0]))
     list2=sorted(os.listdir(path2+str(c)),key=lambda x: int(os.path.splitext(x)[0]))
     intersection=[x for x in list1 if x in list2]
@@ -85,32 +86,6 @@ masks1=masks1.reshape(i, -1)
 masks2=masks2.reshape(i, -1)
 masks1=normalize(masks1)
 masks2=normalize(masks2)
-
-for i in range(10):
-    plt.figure()
-    plt.imshow(mul[i,0,100:120,100:120], cmap="Blues")
-    plt.colorbar()
-    plt.savefig("./good"+str(i)+"R.png")
-    plt.figure()
-    plt.imshow(mul[i,1,100:120,100:120], cmap="Blues")
-    plt.colorbar()
-    plt.savefig("./good"+str(i)+"G.png")
-    plt.figure()
-    plt.imshow(mul[i,2,100:120,100:120], cmap="Blues")
-    plt.colorbar()
-    plt.savefig("./good"+str(i)+"B.png")
-    plt.figure()
-    plt.imshow(mul_w[i,0,100:120,100:120], cmap="Blues")
-    plt.colorbar()
-    plt.savefig("./bad"+str(i)+"R.png")
-    plt.figure()
-    plt.imshow(mul_w[i,1,100:120,100:120], cmap="Blues")
-    plt.colorbar()
-    plt.savefig("./bad"+str(i)+"G.png")
-    plt.figure()
-    plt.imshow(mul_w[i,2,100:120,100:120], cmap="Blues")
-    plt.colorbar()
-    plt.savefig("./bad"+str(i)+"B.png")
 
 
 '''
