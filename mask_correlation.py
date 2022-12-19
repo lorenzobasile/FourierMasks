@@ -13,17 +13,17 @@ def normalize(x):
     s=np.std(x)
     return x
 def remove_fund(x):
-    x[:,112,112]=0.0
+    x[112,112]=0.0
     return x
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--attack1', type=str, default="FMN", help="attack type")
 parser.add_argument('--type1', type=str, default="adv", help="mask type")
-parser.add_argument('--model1', type=str, default="resnet", help="network")
+parser.add_argument('--model1', type=str, default="resnet18", help="network")
 parser.add_argument('--attack2', type=str, default="FMN", help="attack type")
 parser.add_argument('--type2', type=str, default="adv", help="mask type")
-parser.add_argument('--model2', type=str, default="resnet", help="network")
+parser.add_argument('--model2', type=str, default="resnet18", help="network")
 
 
 args = parser.parse_args()
@@ -48,8 +48,8 @@ elif args.type2=='inv':
 elif args.type2=='invalt':
     folder2='singleInvAlt'
 
-folder1='singleInv'
-folder2='singleAdv'
+folder1='singleInvEarly'
+folder2='singleAdvEarly'
 
 path1="./"+folder1+"/"+attack1+"/"+model1+"/masks/"
 path2="./"+folder2+"/"+attack2+"/"+model2+"/masks/"
@@ -67,9 +67,9 @@ for c in range(10):
     list2=sorted(os.listdir(path2+str(c)),key=lambda x: int(os.path.splitext(x)[0]))
     intersection=[x for x in list1 if x in list2]
     for mask in intersection:
-        masks1[i]=remove_fund(np.load(path1+str(c)+"/"+mask))
-        masks2[i]=remove_fund(np.load(path2+str(c)+"/"+mask))
-        if i>1:
+        masks1[i]=np.load(path1+str(c)+"/"+mask)
+        masks2[i]=np.load(path2+str(c)+"/"+mask)
+        if False:
             mul[i]=masks1[i]*masks2[i]
             mul_w[i]=masks1[i]*masks2[i-1]
         labels[i]=c
@@ -132,6 +132,9 @@ print(corrs)
 print(masks1[np.argmin(corrs)].sum(), masks2[np.argmin(corrs)].sum())
 print("Mean: ", np.mean(corrs))
 print("Std: ", np.std(corrs))
+for i in range(10):
+    print(np.mean(corrs[np.where(labels==i)[0]]))
+
 '''
 for i in range(len(masks1)):
     same_label=np.where(labels==labels[i])[0]
@@ -139,21 +142,21 @@ for i in range(len(masks1)):
     max_same=0
     max_diff=0
     for m in same_label:
-        corr=np.sum(masks1[i]*masks1[m])/np.linalg.norm(masks1[i], 2)/np.linalg.norm(masks1[m], 2)
+        corr=np.sum(masks1[i]*masks2[m])/np.linalg.norm(masks1[i], 2)/np.linalg.norm(masks2[m], 2)
         if corr>max_same:
             max_same=corr
     for m in diff_label:
-        corr=np.sum(masks1[i]*masks1[m])/np.linalg.norm(masks1[i], 2)/np.linalg.norm(masks1[m], 2)
+        corr=np.sum(masks1[i]*masks2[m])/np.linalg.norm(masks1[i], 2)/np.linalg.norm(masks2[m], 2)
         if corr>max_diff:
             max_diff=corr
     print(max_same, max_diff)
 
-'''
 
+'''
 
 print("Correlation (shuffle):")
 correlations=[]
-for i in range(20):
+for i in range(10):
     permuted1=np.random.permutation(masks1)
     norm1=np.linalg.norm(permuted1, 2, axis=1)
     dp=np.sum(permuted1*masks2, axis=1)

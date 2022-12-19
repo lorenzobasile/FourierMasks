@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 def normalize(x):
     m=np.mean(x)
     s=np.std(x)
-    return x-m/s
+    return x
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--attack', type=str, default="PGD", help="attack type")
@@ -26,9 +26,9 @@ attack=args.attack
 adv_dataloaders = {'test': DataLoader(AdversarialDataset(None, model_name, attack, None, 'test'), batch_size=batch_size, shuffle=False)}
 
 if args.type=='adv':
-    folder='singleAdv'
+    folder='singleAdvEarly'
 elif args.type=='inv':
-    folder='singleInv'
+    folder='singleInvEarly'
 elif args.type=='invalt':
     folder='singleInvAlt'
 
@@ -99,7 +99,7 @@ print("Std: ", np.std(corrs))
 
 print("Correlation (shuffle):")
 correlations=[]
-for i in range(100):
+for i in range(10):
     permuted=np.random.permutation(masks)
     norm1=np.linalg.norm(permuted, 2, axis=1)
     dp=np.sum(permuted*perturb, axis=1)

@@ -19,8 +19,8 @@ def remove_fund(x):
 
 batch_size=8
 
-folderInv='singleInv'
-folderAdv='singleAdv'
+folderInv='singleInvEarly'
+folderAdv='singleAdvEarly'
 
 pathInv="./"+folderInv+"/FMN/resnet18/masks/"
 pathAdv="./"+folderAdv+"/FMN/resnet18/masks/"
