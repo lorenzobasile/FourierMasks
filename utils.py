@@ -67,9 +67,9 @@ def singleAdv(base_model, clean, adv, y, n_epochs, lam, idx, path):
                 correct = torch.argmax(out, axis=1)==y[i] and torch.argmax(model(clean[i]), axis=1)==y[i]
                 if correct and i in wereadv:
                     mask=np.fft.fftshift(model.mask.weight.detach().cpu().reshape(3,224,224))
-                    plt.figure(figsize=(30,20))
-                    plt.plot(losses[i])
-                    plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"loss.png")
+                    #plt.figure(figsize=(30,20))
+                    #plt.plot(losses[i])
+                    #plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"loss.png")
                     plt.figure()
                     plt.imshow(mask[0], cmap="Blues")
                     plt.colorbar()
@@ -84,6 +84,7 @@ def singleAdv(base_model, clean, adv, y, n_epochs, lam, idx, path):
                     plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"B.png")
                     np.save(path+"masks/"+str(y[i].item())+"/"+str(idx)+".npy", mask)
                 idx+=1
+                break
     return idx
 
 
@@ -107,7 +108,8 @@ def singleInv(base_model, clean, x, y, n_epochs, lam, idx, path):
             p.requires_grad=False
         model.mask.train()
         optimizer=torch.optim.Adam(model.mask.parameters(), lr=0.01)
-        for epoch in range(n_epochs):
+        epoch=0
+        while True:
             out=model(clean[i])
             invariance=loss(out, y[i].reshape(1))
             penalty=model.mask.weight.abs().sum()
@@ -117,13 +119,14 @@ def singleInv(base_model, clean, x, y, n_epochs, lam, idx, path):
             l.backward()
             optimizer.step()
             model.mask.weight.data.clamp_(0.)
-            if epoch==n_epochs-1:
+            epoch+=1
+            if epoch>500 and abs(l.item()-np.mean(losses[i][-20:]))<1e-5:
                 correct=torch.argmax(out, axis=1)==y[i]
                 if correct and i in werecorrect:
                     mask=np.fft.fftshift(model.mask.weight.detach().cpu().reshape(3,224,224))
-                    plt.figure(figsize=(30,20))
-                    plt.plot(losses[i])
-                    plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"loss.png")
+                    #plt.figure(figsize=(30,20))
+                    #plt.plot(losses[i])
+                    #plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"loss.png")
                     plt.figure()
                     plt.imshow(mask[0], cmap="Blues")
                     plt.colorbar()
@@ -138,4 +141,5 @@ def singleInv(base_model, clean, x, y, n_epochs, lam, idx, path):
                     plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"B.png")
                     np.save(path+"masks/"+str(y[i].item())+"/"+str(idx)+".npy", mask)
                 idx+=1
+                break
     return idx

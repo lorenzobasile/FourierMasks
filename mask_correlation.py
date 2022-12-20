@@ -1,4 +1,4 @@
-#from dadapy.data import Data
+from dadapy.data import Data
 import torch
 import argparse
 from torch.utils.data import DataLoader
@@ -88,7 +88,6 @@ masks1=normalize(masks1)
 masks2=normalize(masks2)
 
 
-'''
 print("Using ID:")
 print("ID of first set:")
 data = Data(masks1, maxk=3)
@@ -107,7 +106,6 @@ print("ID of both (shuffle):")
 full_data=np.concatenate([np.random.permutation(masks1), masks2], axis=1)
 data = Data(full_data, maxk=3)
 print(data.compute_id_2NN()[0])
-'''
 
 print("Using scalar product:")
 

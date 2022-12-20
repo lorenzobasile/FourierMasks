@@ -24,8 +24,8 @@ attack=args.attack
 norm='infty'
 batch_size=16
 
-pathAdv="./singleAdv/"+attack+"/"+model_name+"/"
-pathInv="./singleInv/"+attack+"/"+model_name+"/"
+pathAdv="./singleAdvEarly2/"+attack+"/"+model_name+"/"
+pathInv="./singleInvEarly2/"+attack+"/"+model_name+"/"
 if not os.path.exists(pathAdv) or not os.path.exists(pathInv):
     for i in range(10):
         os.makedirs(pathAdv+"figures/"+str(i), exist_ok=True)
