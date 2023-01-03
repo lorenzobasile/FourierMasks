@@ -212,7 +212,7 @@ def singleAttack(base_model, clean, x, y, n_epochs, lam, idx, path):
                     plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"attack.png")
                     plt.figure()
                     plt.imshow(clean[i].permute(1,2,0).detach().cpu().numpy())
-                    plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"original.png")                  
+                    plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"original.png")
                     plt.figure()
                     plt.imshow(mask[2], cmap="Blues")
                     plt.colorbar()
