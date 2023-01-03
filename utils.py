@@ -60,7 +60,7 @@ def singleAdv(base_model, clean, adv, y, n_epochs, lam, idx, path):
             optimizer.zero_grad()
             l.backward()
             optimizer.step()
-            model.mask.weight.data.clamp_(0.)
+            model.mask.weight.data.clamp_(0., 1.)
             epoch+=1
             if epoch>500 and abs(l.item()-np.mean(losses[i][-20:]))<1e-5:
                 model.eval()
@@ -156,8 +156,9 @@ def singleAttack(base_model, clean, x, y, n_epochs, lam, idx, path):
     base_out=base_model(clean)
     losses=[[] for i in range(n)]
     werecorrect=(np.where((torch.argmax(base_out, axis=1)==y).cpu())[0]) #only correctly classified images
-
+    target=7
     for i in range(n):
+        print("Image ", i)
         model=MaskedClf(Mask().to(device), base_model)
         for p in model.clf.parameters():
             p.requires_grad=False
@@ -165,22 +166,35 @@ def singleAttack(base_model, clean, x, y, n_epochs, lam, idx, path):
         optimizer=torch.optim.Adam(model.mask.parameters(), lr=0.01)
         epoch=0
         while True:
-            print("Epoch: ", epoch)
             out=model(clean[i])
-            invariance=loss(out, y[i].reshape(1))
-            penalty=(model.mask.weight-1.0).abs().sum()
-            print("Pen: ", penalty*lam)
-            print("Inv: ", invariance)
-            l=penalty*lam-invariance
-            losses[i].append(l.item())
+            classification=torch.argmax(out, axis=1)
+            if False:
+                invariance=loss(out, y[i].reshape(1))
+                penalty=torch.norm(model.mask.weight-1.0, p=2)
+                #penalty=(model.mask.weight-1.0).abs().sum()
+                print("Pen: ", penalty.item()*lam)
+                print("Inv: ", invariance.item())
+                print("Class: ", torch.argmax(out, axis=1).item(), end='\r')
+                l=penalty*lam-invariance
+            else:
+                invariance=loss(out, torch.tensor(7).reshape(1).to(device))
+                #penalty=torch.norm(model.mask.weight-1.0, p=2)
+                penalty=(model.mask.weight-1.0).abs().sum()
+                #print("Pen: ", penalty.item()*lam)
+                #print("Inv: ", invariance.item())
+                #print("Class: ", torch.argmax(out, axis=1).item(), end='\r')
+                l=penalty*lam+invariance
+            losses[i].append(lam*penalty.item())
             optimizer.zero_grad()
             l.backward()
             optimizer.step()
-            model.mask.weight.data.clamp_(0.)
+            model.mask.weight.data.clamp_(0., 1.0)
             epoch+=1
-            if epoch>500 and abs(l.item()-np.mean(losses[i][-20:]))<1e-5:
+            if epoch>20 and lam*penalty.item()-np.mean(losses[i][-20:])>0:
+                print("Class: ", torch.argmax(out, axis=1).item())
+                print("Delta: ", torch.norm(model.mask(clean[i])[0].detach().cpu()-clean[i].detach().cpu(), float('inf')))
                 correct=torch.argmax(out, axis=1)==y[i]
-                if correct and i in werecorrect:
+                if not correct and i in werecorrect:
                     mask=np.fft.fftshift(model.mask.weight.detach().cpu().reshape(3,224,224))
                     #plt.figure(figsize=(30,20))
                     #plt.plot(losses[i])
@@ -194,10 +208,17 @@ def singleAttack(base_model, clean, x, y, n_epochs, lam, idx, path):
                     plt.colorbar()
                     plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"G.png")
                     plt.figure()
+                    plt.imshow(model.mask(clean[i])[0].permute(1,2,0).detach().cpu().numpy())
+                    plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"attack.png")
+                    plt.figure()
+                    plt.imshow(clean[i].permute(1,2,0).detach().cpu().numpy())
+                    plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"original.png")                  
+                    plt.figure()
                     plt.imshow(mask[2], cmap="Blues")
                     plt.colorbar()
                     plt.savefig(path+"figures/"+str(y[i].item())+"/"+str(idx)+"B.png")
                     np.save(path+"masks/"+str(y[i].item())+"/"+str(idx)+".npy", mask)
                 idx+=1
+                print(epoch)
                 break
     return idx

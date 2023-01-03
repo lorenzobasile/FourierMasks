@@ -1,5 +1,7 @@
 from sklearn.decomposition import PCA
 import torch
+from dadapy.data import Data
+
 from torch.utils.data import DataLoader
 from data import AdversarialDataset
 import os
@@ -39,7 +41,6 @@ for c in range(10):
     for mask in listAdv:
         masksAdv[c].append(np.load(pathAdv+str(c)+"/"+mask))
     masksAdv[c]=np.array(masksAdv[c])
-pca = PCA(n_components=200)
-pca.fit(masksAdv[0].reshape(adv_files[0],-1))
-plt.plot(np.cumsum(pca.explained_variance_ratio_))
-plt.show()
+    print(c)
+    data = Data(masksAdv[c].reshape(-1,3*224*224), maxk=3)
+    print(data.compute_id_2NN()[0])

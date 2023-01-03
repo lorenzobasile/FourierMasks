@@ -1,5 +1,5 @@
 import foolbox
-from utils import singleAdv, singleInv
+from utils import singleAdv, singleInv, singleAttack
 import torch
 import argparse
 from torch.utils.data import DataLoader
@@ -17,7 +17,7 @@ parser.add_argument('--attack', type=str, default="PGD", help="attack type")
 parser.add_argument('--model', type=str, default="resnet", help="model architecture")
 args = parser.parse_args()
 
-lam=0.001
+lam=0.1
 data='./data/imagenette2-320/'
 model_name=args.model
 attack=args.attack
@@ -64,5 +64,6 @@ for x, xadv, y in adv_dataloaders['test']:
     modelsInv=[]
     optimizersAdv=[]
     optimizersInv=[]
-    idxAdv=singleAdv(base_model, x,  xadv, y, 500, lam, idxAdv, pathAdv)
-    idxInv=singleInv(base_model, x,  xadv, y, 500, lam, idxInv, pathInv)
+    #idxAdv=singleAdv(base_model, x,  xadv, y, 500, lam, idxAdv, pathAdv)
+    #idxInv=singleInv(base_model, x,  xadv, y, 500, lam, idxInv, pathInv)
+    idxInv=singleAttack(base_model, x,  xadv, y, 500, lam, idxInv, pathInv)
